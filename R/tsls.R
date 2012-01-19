@@ -1,15 +1,14 @@
 ##################################################################
 ## tsls.R /
 ## Author: Giuseppe Ragusa 
-## Time-stamp: "2011-11-28 17:37:38 gragusa" 
+## Time-stamp: "2012-01-19 13:30:17 gragusa" 
 ##
 ## Description:
 ##################################################################
 
-ivreg <- function(y, ...)
-  UseMethod("ivreg")
 
 
+##' @export
 tsls2 <- function (y, X, Z, names=NULL, weights,
                    cluster=NULL, ...) {
   n <- length(y)
@@ -77,6 +76,7 @@ tsls2 <- function (y, X, Z, names=NULL, weights,
   result
 }
 
+
 ivregdefault <- function(y, X, Z, names=colnames(X), weights,
                          method = "tsls", cluster=cluster, start, ...)
 {
@@ -134,7 +134,15 @@ ivregdefault <- function(y, X, Z, names=colnames(X), weights,
              )
 }    
 
-
+##' Estimate IV models
+##'
+##' Details
+##' @title ivreg
+##' @param y responses
+##' @param ... other arguments
+##' @rdname ivreg
+##' @return \code{NULL}
+##' @export ivreg
 ivreg <- function (formula, instruments, data, subset, weights,
                    na.action, contrasts = NULL,
                    cluster = NULL, method = "tsls", start = NULL,...) {
@@ -182,7 +190,7 @@ ivreg <- function (formula, instruments, data, subset, weights,
     result
 }
 
-
+##' @S3method print ivreg
 print.ivreg <- function(x, ...) {
     cat("\nModel Formula: ")
     print(x$formula)
@@ -194,6 +202,7 @@ print.ivreg <- function(x, ...) {
     invisible(x)
 }
 
+##' @S3method summary ivreg
 summary.ivreg <- function(object, digits = 4, ...) {
     save.digits <- unlist(options(digits = digits))
     on.exit(options(digits = save.digits))
@@ -256,13 +265,9 @@ se.reg <- function(x)
 se.md <- function(x, vcov. = 'wr')
     sqrt(diag(x$V[[vcov.]]))
 
-model.cluster <- function (x) 
-  x$"(cluster)"
 
-
-
-
-vcov.ivreg <- function (object, hc = c('HC', 'HC1', 'HC2', 'HC3', 'iid'), ...)
+##' @S3method vcov ivreg
+vcov.ivreg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"), ...)
 {
     z <- object
     hc <- match.arg(hc)

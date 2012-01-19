@@ -1,11 +1,11 @@
 ##################################################################
 ## utils.R /
 ## Author: Giuseppe Ragusa 
-## Time-stamp: "2010-02-17 19:55:15 gragusa utils.R" 
+## Time-stamp: "2012-01-19 13:29:14 gragusa" 
 ##
 ## Description: Utils function for grpack
 ##################################################################
-
+##' @export
 rndCGM <- function( alpha = 0, beta = 1, sdalpha = 1, sdepsilon = 1,
                    nclusters = 4, nsubjects = 30, errortype = "homoskedastic",
                    errordist = 1, 
@@ -96,8 +96,6 @@ trim <- function(x, q = 0.01)
     x[x>qq[1] & x<qq[2]]
 }
 
-
-
 capply <- function(str, ff) {
 
     sapply(lapply(strsplit(str, NULL), ff), paste, collapse="") }
@@ -127,3 +125,5 @@ lowerize <- function(str) {
     capply(str,ff) 
 }
 
+model.cluster <- function (x) 
+  x$"(cluster)"

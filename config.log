@@ -30,12 +30,14 @@ Kernel configured for up to 2 processors.
 Processor type: i486 (Intel 80486)
 Processors active: 0 1
 Primary memory available: 4.00 gigabytes
-Default processor set: 94 tasks, 453 threads, 2 processors
-Load average: 1.37, Mach factor: 1.12
+Default processor set: 105 tasks, 472 threads, 2 processors
+Load average: 2.29, Mach factor: 0.90
 /bin/machine           = unknown
 /usr/bin/oslevel       = unknown
 /bin/universe          = unknown
 
+PATH: /opt/local/bin
+PATH: /opt/local/sbin
 PATH: /usr/bin
 PATH: /bin
 PATH: /usr/sbin

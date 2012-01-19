@@ -1,0 +1,217 @@
+#include <la.h> 
+#include <matrix.h> 
+#include <stat.h>
+#include <ide.h>
+#include <mersenne.h>
+#include <distributions.h>
+#include <rng.h>
+#include <R_ext/PrtUtil.h>
+//#include <Rmath.h>
+//#include <R_ext/RS.h>     /* for Calloc/Free */
+//#include <R_ext/Applic.h> /* for dgemm */
+
+using namespace scythe;
+using namespace std;
+
+mersenne myrng;
+
+
+extern "C"{ 
+  void demean(const double* Adata, const int* ncol, 
+	      const int* nrow, double* out)
+  {
+    Matrix<double, Col> A(*nrow, *ncol, Adata);
+    Matrix<double> Am = meanc(A);
+    
+    for(unsigned int i = 0; i< A.rows(); ++i)
+      for(unsigned int j = 0; j< A.cols(); ++j)
+	A(i,j) = A(i,j)-Am(j);
+
+    for(unsigned int i = 0; i< (A.rows()*A.cols()); ++i)
+      out[i] = A(i);
+  }
+}
+
+
+
+
+extern "C"{
+//   void robcovf_(const int *n, const int *p, const int *nc, 
+// 		const int *start, const int *len, 
+// 		double *u, double *s, double *v, double *w);
+  
+  void wildboot(const double* Xdata, const double* Ydata, 
+		const int* nrow, const int* ncol, const int* nrep,
+		const int* clusstart, const int* clussize, const int* nc, 
+		const double* b0,
+		double* out1, double* out2, double* out3, double* out4)
+  {
+//     void robcovf_(const int *n, const int *p, const int *nc, 
+// 		 const int *start, const int *len, 
+// 		 double *u, double *s, double *v, double *w);
+    void robcovf(const int n, const int kv, const int ncl, const int* start, 
+    		const int* len, double* u, double* s, double* v, 
+    		double* w);
+    // Containers
+    const Matrix<double> X(*nrow, *ncol, Xdata);
+    const Matrix<double> Y(*nrow,     1, Ydata);
+    const Matrix<double> XX      = invpd(crossprod(X));
+    const Matrix<double> betahat = XX*t(X)*Y;
+    const Matrix<double> uhat    = Y-X*betahat;
+    const Matrix<double> beta0(*ncol, 1, b0);
+
+    // Working Matrices
+    Matrix<double> V(*ncol, *ncol);
+    Matrix<double> WW(*ncol, *ncol);      // Store WW unrestricted
+    Matrix<double> bout(*nrep, *ncol);    // Store betahat_wild
+    Matrix<double> ts(*nrep, *ncol);      // T-stat (beta-betahat)/s
+    Matrix<double> ts0(*nrep, *ncol);     // T-stat (beta-beta0)/s
+    Matrix<double> SE(*nrep, *ncol);
+    Matrix<double> ustar = uhat;          // Store uwild
+    Matrix<double> Xs    = X;
+
+    // Constant
+
+    const int n     = X.rows();
+    const int k     = X.cols();
+    const int r     = bout.rows();
+    const int ncl   = *nc;
+    const int start = *clusstart;
+    const int len   = *clussize;
+
+    // Others
+    double factor = (double) (n-1)/(n-k);
+    double u[n*k], s[k], v[k*k], w[k*k];
+    double ti;
+
+    if(ncl>1) {
+      factor = factor * (double) (ncl)/(ncl-1);}
+    factor = sqrt(factor);
+
+    for(unsigned int i = 0; i< r; ++i)
+      {
+	// This does not cluster!!
+	// for(unsigned int j = 0; j<n; ++j)
+	//  {
+	//    ti = myrng.rnorm(0,1);
+	//    ti = (double) ti/sqrt(2.0)+(pow(ti,2.0)-1.)/2.;
+	//    ustar(j) = uhat(j)*ti;
+	//  }
+	// Experimental and not working goes into infinite loop
+	for(unsigned int j = 0; j<ncl; ++j)
+	  {
+	    int start = clusstart[j]-1;
+	    int end   = clusstart[j]+clussize[j]-1;
+	    //Rprintf("Start: %d = End: %d \n", start, end);
+	    ti = myrng.rnorm(0,1);
+	    ti = ti/sqrt(2.0)+(pow(ti,2.0)-1.)/2.;
+	    for(unsigned int jj = start; jj<end; ++jj)
+	      ustar(jj) = uhat(jj)*ti;
+	  }
+	//
+	bout(i,_) = betahat + XX*t(X)*ustar;
+	ustar = Y-X*t(bout(i,_));
+	for(unsigned int j = 0; j<n; ++j)
+	  for(unsigned int i = 0; i<k; ++i)
+	    Xs(j,i) = (X(j,i)*ustar(j))*factor;
+
+	if(ncl==1) {
+	    V = XX*crossprod(Xs)*XX;
+	}
+	else {
+	  for(unsigned int j = 0; j<(n*k); ++j)
+	    u[j] = Xs(j);
+	  
+	  // Call robcovf_ //
+	  robcovf(n, k, ncl, clusstart, clussize, u, s, v, w);
+
+	  for(unsigned int uu = 0; uu<(k*k); ++uu)
+	    {
+	      //Rprintf("WW(%d) = %f \n", uu, w[uu]);//
+	      WW(uu) = w[uu];
+	    }
+	  
+	  V = XX*WW*XX;
+	}
+	  
+	ts(i,_)  = (bout(i,_)-t(betahat));
+	ts0(i,_) = (bout(i,_)-t(beta0));
+ 
+	for(unsigned int ii = 0; ii<k; ++ii)
+	  {
+	    ts(i,ii)  = ts(i,ii)/sqrt(V(ii,ii));
+	    ts0(i,ii) = ts0(i,ii)/sqrt(V(ii,ii));
+	    SE(i, ii) = sqrt(V(ii,ii));
+	    //Rprintf("%f \n", SE(i, ii));
+	  }
+	
+      }
+	
+    for(unsigned int i = 0; i<(r*k); ++i) 
+      {
+	out1[i] = bout(i);
+	out2[i] = ts(i);
+	out3[i] = ts0(i);
+	out4[i] = SE(i);
+      }
+  }
+  
+
+  void robcovf(const int n, const int kv, const int ncl,  int* start, 
+	       int* len, double* u, double* s, double* v, double* w)
+{
+    /* System generated locals */
+  int i2;
+
+    /* Local variables */
+  static int i, j, k;
+  
+  for (i = 0; i < kv; ++i) {
+    for (j = 0; j < kv; ++j) {
+      w[i + j * kv] = 0.;
+    }
+  }
+
+  for (k = 0; k < ncl; ++k) {
+    for (i = 0; i < kv; ++i) {
+      s[i] = 0.;
+      for (j = 0; j < kv; ++j) {
+	v[i + j * kv] = 0.;
+      }
+    }
+    i2 = start[k] + len[k] - 1;
+    for (i = (start[k]-1); i < i2; ++i) {
+      for (j = 0; j < kv; ++j) {
+	s[j] += u[i + j * n];
+      }
+    }
+
+//     for (j = 0; j < kv; ++j) {
+// 	Rprintf("s[%d] = %f \n",  j, s[j]);
+//       }
+    
+
+
+    for (i = 0; i < kv; ++i) {
+      for (j = 0; j < kv; ++j) {
+	v[i + j * kv] += s[i] * s[j];
+      }
+    }
+
+//     for (i = 0; i < kv; ++i) {
+//       for (j = 0; j < kv; ++j) {
+// 	Rprintf("v[%d,%d] = %f \n", i, j, v[i + j * kv]);
+//       }
+//     }
+
+    for (i = 0; i < kv; ++i) {
+      for (j = 0; j < kv; ++j) {
+	w[i + j * kv] += v[i + j * kv];
+	//	Rprintf("%f %f \n", v[i + j * kv], w[i + j * kv]);//
+      }
+    }
+  }
+}
+}
+
+

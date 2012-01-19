@@ -1,0 +1,14 @@
+##################################################################
+## zzz.R /
+## Author: Giuseppe Ragusa 
+## Time-stamp: "2008-02-16 19:00:44 gragusa" 
+##
+## Description:
+##################################################################
+.First.lib <-
+function(lib, pkg)
+{
+    library.dynam("grpack", pkg, lib)
+    require(stats, quietly = TRUE)
+}
+

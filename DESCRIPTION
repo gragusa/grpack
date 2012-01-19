@@ -1,0 +1,10 @@
+Package: grpack
+Type: Package
+Title: Utility functions for econometric applications
+Version: 0.1
+Date: 2011-11-1
+Author: Giuseppe Ragusa <gragusa@luiss.it>
+Maintainer: Giuseppe Ragusa <gragusa@luiss.it>
+Depends: R (>= 2.0), sandwich
+Description: More about what it does (maybe more than one line)
+License: GPL (version 2 or later)

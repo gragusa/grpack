@@ -1,7 +1,7 @@
 ##################################################################
 ## utils.R /
 ## Author: Giuseppe Ragusa 
-## Time-stamp: "2012-01-19 13:29:14 gragusa" 
+## Time-stamp: "2012-01-19 19:51:55 gragusa" 
 ##
 ## Description: Utils function for grpack
 ##################################################################
@@ -23,30 +23,24 @@ rndCGM <- function( alpha = 0, beta = 1, sdalpha = 1, sdepsilon = 1,
     
     ## Generate Instruments
     
-    if(!constantreg)
-    {
+    if(!constantreg) {
         Xig <- rnorm(S*Ns, mean = 0, sd = sdalpha)
         scale <- 1
     }
-    else
-    {
+    else {
         Xig <- rep(rnorm(S, mean = 0, sd = sdalpha), each = Ns)
         scale <- sqrt(2)
     }
     
-    if (errortype == "homoskedastic")
-    {
+    if (errortype == "homoskedastic") {
         eig <- rnorm(S*Ns,sd = sdepsilon)
         uig <- rnorm(S*Ns,sd = sdepsilon)
-    }
-    else
-    {
+    } else {
         eig <- rnorm(S*Ns,sd = sqrt(9*(Xg+Xig)^2))
         uig <- rnorm(S*Ns,sd = sdepsilon)
     }
     
-    if(nins > 0)
-    {
+    if(nins > 0) {
         gamma = sqrt(r2/(nins*(1-r2)))
         errc <- cbind(eig,uig)
         varerrc <- cbind(c(1,rho), c(rho,1))
@@ -60,6 +54,7 @@ rndCGM <- function( alpha = 0, beta = 1, sdalpha = 1, sdepsilon = 1,
                          function(x) rep(rnorm(S, mean = 0, sd = sdalpha), each = Ns))
         Xig <- Zig%*%rep(gamma,nins) + uig
     }
+    
     yis <- alpha+beta*((Xg+Xig)/scale)+eig+ag
     if(nins)
         data.frame(y = yis, X = (Xig+Xg)/scale, Zig = Zig, cluster = rep(1:S,each = Ns))

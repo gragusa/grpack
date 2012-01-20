@@ -1,8 +1,28 @@
 ##' @export
+##'
+##'
+##' 
+##' Wild Bootstrap for regression model.
+##'
+##' Calculate several wild bootstrapped quantities.
+##' 
+##' @title wildboot
+##' @param x an object
+##' @param ... other arguments
+##' @return A list with several components
+##' @rdname wildboot
+##' @author Giuseppe Ragusa
+wildboot <- function(x, ...)
+    UseMethod('lmlatexline')
+
+##' rdnames wildboot
+##' @method wildboot
+##' @S3method wildboot reg
+##' @return \code{NULL}
 wildboot.reg <- function(obj, reps, null,
-                         wbtype = c('radamacher', 'mtp', 'mn1', 'mn2'))
+                         type = c('radamacher', 'mtp', 'mn1', 'mn2'))
 {
-    wbtype <- match.arg(wbtype)
+    wbtype <- match.arg(type)
     wtyp <- switch(wbtype,
                    radamacher = 1,
                    mtp        = 2,
@@ -22,10 +42,9 @@ wildboot.reg <- function(obj, reps, null,
     res <- residuals(z)
     
     if(missing(null) | !is.list(null))
-        stop('For now')
+        stop('Null must be a list')
     
-    if(is.list(null))
-    {
+    if(is.list(null)) {
         tmp  <- match(names(b), names(null), nomatch = NA)
         null <- unlist(null)[tmp]
         wr   <- which(!is.na(tmp))
@@ -49,16 +68,14 @@ wildboot.reg <- function(obj, reps, null,
         w <- w[j]
         clus.start <- clus.start[-(nc + 1)]
         fcl <- (nc/(nc-1))
-    }
-    else {
+    } else {
         nc <- 1
         clus.start <- c(1,n)
         clus.size <- c(n)
         fcl <- 1
     }
     
-    if(!is.null(w))
-    {
+    if(!is.null(w)) {
         X      <- X*c(sqrt(w))
         y      <- y*c(sqrt(w)) 
     }
@@ -90,8 +107,7 @@ wildboot.reg <- function(obj, reps, null,
     storage.mode(y)          <- "double"
     storage.mode(res)        <- "double"
     
-    for(j in 1:lwr)
-    {
+    for(j in 1:lwr) {
         tmp <- wr[j]
         yr  <- y-X[, tmp, drop = FALSE]%*%null[[tmp]]
         Xr  <- X[, -tmp, drop = FALSE]
@@ -103,7 +119,7 @@ wildboot.reg <- function(obj, reps, null,
         brs[-tmp] <- br
 
         storage.mode(brs) <- "double"
-        storage.mode(ur) <- "double"
+        storage.mode(ur)  <- "double"
         storage.mode(ur)  <- "double"
         
         out <- .C('wildbootr', X, y, ur, brs, factor, tmp, lwr, n, k,
@@ -116,6 +132,7 @@ wildboot.reg <- function(obj, reps, null,
         tstat0[,j]      <- (coef.wb0 - null[tmp])/serr.wb0
         tstat0.se[,j]   <- (coef.wb0 - null[tmp])/sd(coef.wb0)
     }
+    
     nul <- unlist(null)
     nul[is.na(nul)] <- 0
     tstat0.se <- (b[wr]-nul[wr])/sd(coef.wb0)
@@ -171,18 +188,19 @@ print.reg.wb <- function(x, ...) {
         cat('', names(x$null)[j], ' = ', x$null[[j]], '\n')
     cat('\n')
 }
+
 ##' @S3method summary reg.wb
-summary.reg.wb <- function(x, ...) {
+summary.reg.wb <- function(x, vcov = "HC3", ...) {
     b  <- coef(x)
-    se <- sqrt(diag(vcov(x, ...)))
+    se <- sqrt(diag(vcov(x, type = vcov)))
     h0 <- unlist(x$null)
     h0[is.na(h0)] <- 0
     tstat <- (b-h0)/se
     pv0 <- matrix(0, 2, x$lwr)
     pv  <- matrix(0, 2, length(b))
 
-    for(j in 1:length(b))
-    {   ats <- abs(tstat[j])
+    for(j in 1:length(b)) {
+        ats <- abs(tstat[j])
         edf3 <- ecdf(x$tstat[,j])
         pv[1,j] <- edf3(-abs(ats))+(1-edf3(abs(ats)))
     }
@@ -208,7 +226,6 @@ summary.reg.wb <- function(x, ...) {
     out
 }
 
-
 ##' @S3method print summary.reg.wb
 print.summary.reg.wb <- function(x, digits = max(3, getOption("digits") - 3), ...) {
     b <- coef(x)
@@ -219,23 +236,23 @@ print.summary.reg.wb <- function(x, digits = max(3, getOption("digits") - 3), ..
         cat('\n ', nb[j], ' = ', x$null[j], '\n')
         cat(' wb p-value (a):' , format.pval(x$pv.tstat0[j]),
             symnum(x$pv.tstat0[j], corr = FALSE, na = FALSE, 
-                   cutpoints = c(0, 0.001, 0.01, 0.05, 0.1, 1), 
-                   symbols = c("***", "**", "*", ".", " ")), '\n')
+                   cutpoints = c(0, 0.01, 0.05, 0.1, 1), 
+                   symbols = c("***", "**", "*", " ")), '\n')
         cat(' wb p-value (b):' , format.pval(x$pv.tstat0.se[j]),
             symnum(x$pv.tstat0.se[j], corr = FALSE, na = FALSE, 
-                   cutpoints = c(0, 0.001, 0.01, 0.05, 0.1, 1), 
-                   symbols = c("***", "**", "*", ".", " ")), '\n')
+                   cutpoints = c(0,  0.01, 0.05, 0.1, 1), 
+                   symbols = c("***", "**", "*",  " ")), '\n')
         cat(' wb p-value (c):' , format.pval(x$pv.tstat[j]),
             symnum(x$pv.tstat[j], corr = FALSE, na = FALSE, 
-                   cutpoints = c(0, 0.001, 0.01, 0.05, 0.1, 1), 
-                   symbols = c("***", "**", "*", ".", " ")), '\n')
+                   cutpoints = c(0, 0.01, 0.05, 0.1, 1), 
+                   symbols = c("***", "**", "*", " ")), '\n')
         cat(' wb p-value (d):' , format.pval(x$pv.tstat.se[j]),
             symnum(x$pv.tstat.se[j], corr = FALSE, na = FALSE, 
-                   cutpoints = c(0, 0.001, 0.01, 0.05, 0.1, 1), 
-                   symbols = c("***", "**", "*", ".", " ")), '\n')
+                   cutpoints = c(0, 0.01, 0.05, 0.1, 1), 
+                   symbols = c("***", "**", "*",  " ")), '\n')
     }
 
-    cat("\n ---\n Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1 \n")
+    cat("\n ---\n Signif. codes: '***' 0.01 '**' 0.05 '*' 0.1  \n")
 }
 
 

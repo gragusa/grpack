@@ -119,7 +119,7 @@ reg <- function(formula, data, subset, weights, na.action,
     z$terms <- mt
     z$cluster   <- cluster
     z$clusterby <- mfc$cluster
-    z$weighdby  <- mfc$weights
+    z$weightedby  <- mfc$weights
     z$subsetby  <- mfc$subset
     z$aliased   <- is.na(coef(z))
     if (model) 
@@ -231,7 +231,9 @@ summary.reg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "H
     if(!is.null(z$na.action)) ans$na.action <- z$na.action
     ans$type <- type
     ans$clusterby <- z$clusterby
-    ans$cluster <- z$cluster
+    ans$cluster <-  z$cluster
+    ans$weightedby <- z$weightedby
+    ans$weights <- z$weights
     class(ans) <- c("summary.reg","summary.lm")
     ans
 }
@@ -245,6 +247,8 @@ print.summary.reg <-
 {
     cat("\nModel:\n")#S: ' ' instead of '\n'
     cat(paste(deparse(x$call[[2]]), sep="\n", collapse = "\n"), "\n", sep="")
+    if(!is.null(x$weightedby))
+        cat("(weighted by", x$weightedby, " sum of wgt is ", format(sum(x$weights), digits=2), ")\n")
     resid <- x$residuals
     df <- x$df
     rdf <- df[2L]
@@ -302,7 +306,7 @@ print.summary.reg <-
          if(is.null(x$clusterby))
              cat("Heteroskedastic robust std. err., type: ", x$type, '\n')
          else
-             cat("Std err. adjusted for ", length(unique(x$cluster))," clusters in", x$clusterby, ", type: ", x$type, '\n')
+             cat("Std err. adjusted for", length(unique(x$cluster))," clusters in", x$clusterby, "with", x$type, '\n')
      }
     cat("Signif. codes: ","'***' .001 '**' .01 '*' .05 '.' 0.1\n")
     correl <- x$correlation

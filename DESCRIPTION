@@ -6,8 +6,11 @@ Date: 2011-11-1
 Author: Giuseppe Ragusa <gragusa@luiss.it>
 Maintainer: Giuseppe Ragusa <gragusa@luiss.it>
 Depends:
-    R (>= 2.0),
-    sandwich
+    Rcpp (>= 0.9.9),
+    RcppArmadillo (>= 0.2.34),
+    sandwich,
+    lmtest
+LinkingTo: Rcpp, RcppArmadillo
 Description: More about what it does (maybe more than one line)
 License: GPL (version 2 or later)
 Collate:

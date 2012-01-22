@@ -212,8 +212,7 @@ eviews.regression <-
 ##' @param x  object
 ##' @param ... other arguments
 ##' @rdname lmlatexline
-##' @export lmlatexline
-
+##' @export 
 lmlatexline <- function(x, ...)
     UseMethod('lmlatexline')
 
@@ -409,3 +408,15 @@ printMatCoef <-
 }
 
 
+stripzero <- function(string)
+{
+    if(is.matrix(string))
+        string <- apply(str, 1, function(x) if(!is.na(pmatch('0.',x))) paste('.',strsplit(x, '0.')[[1]][2], sep =''))
+    if(is.array(string)| length(string)>1)
+        for(j in 1:length(string))
+            if(!is.na(pmatch('0.',string[j])))
+                string[j] <- paste('.',strsplit(string[j], '0.')[[1]][2], sep = '')
+    if(!is.na(pmatch('0.',string)))
+        string <- paste('.',strsplit(string, '0.')[[1]][2], sep = '')
+    return(string)
+}

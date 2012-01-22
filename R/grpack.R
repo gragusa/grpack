@@ -1,6 +1,8 @@
-##' mmest is a package that contains useful functions, classes, and
-##' methods for econometric analysis. 
+##' grpack: useful functions, classes, and methods for econometric
+##' analysis. 
 ##'
+##' A Package for Econometric Applications
+##' 
 ##' \tabular{ll}{
 ##' Package: \tab grpack\cr
 ##' Type: \tab Package\cr
@@ -11,12 +13,11 @@
 ##' }
 ##'
 ##' @author Giuseppe Ragusa \email{gragusa@@luiss.it},
-##'
 ##' Maintainer: Giuseppe Ragusa \email{gragusa@@luiss.it}
 ##' @name grpack-package
 ##' @docType package
 ##' @title grpack
-##' @import lattice nloptr rgenoud sandwich numDeriv
+##' @import sandwich Rcpp RcppArmadillo
 ##' @keywords package
 ##' @useDynLib grpack
 NULL

@@ -248,7 +248,7 @@ print.summary.reg <-
     cat("\nModel:\n")#S: ' ' instead of '\n'
     cat(paste(deparse(x$call[[2]]), sep="\n", collapse = "\n"), "\n", sep="")
     if(!is.null(x$weightedby))
-        cat("(weighted by", x$weightedby, " sum of wgt is ", format(sum(x$weights), digits=2), ")\n")
+        cat("(weighted by", paste(deparse(x$weightedby)), " sum of wgt is ", format(sum(x$weights), digits=2), ")\n")
     resid <- x$residuals
     df <- x$df
     rdf <- df[2L]
@@ -327,21 +327,6 @@ print.summary.reg <-
     invisible(x)
 }
 
-
-stripzero <- function(string)
-{
-    if(is.matrix(string))
-        string <- apply(str, 1, function(x) if(!is.na(pmatch('0.',x))) paste('.',strsplit(x, '0.')[[1]][2], sep =''))
-    if(is.array(string)| length(string)>1)
-        for(j in 1:length(string))
-            if(!is.na(pmatch('0.',string[j])))
-                string[j] <- paste('.',strsplit(string[j], '0.')[[1]][2], sep = '')
-    if(!is.na(pmatch('0.',string)))
-        string <- paste('.',strsplit(string, '0.')[[1]][2], sep = '')
-    return(string)
-}
-    
-
 ##' @S3method vcov reg
 vcov.reg <- function (object,
                       type = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"),
@@ -359,8 +344,8 @@ vcov.reg <- function (object,
     rdf  <- n - p
     ##ind  <- !is.na(coef(z))
     nNA  <- Qr$pivot[p1]
-    V      <- matrix(NA, length(Qr$pivot), length(Qr$pivot))
-    R <- chol2inv(Qr$qr[p1, p1, drop = FALSE]) ## solve(X'X)
+    V    <- matrix(NA, length(Qr$pivot), length(Qr$pivot))
+    R    <- chol2inv(Qr$qr[p1, p1, drop = FALSE]) ## solve(X'X)
     w    <- if(is.null(z$weights)) rep(1,n) else z$weights
     r    <- z$residuals
     if(!iscluster) {
@@ -379,54 +364,52 @@ vcov.reg <- function (object,
             }
         }
     } else {
-        f    <- z$fitted.values        
-        facj <- n/(n-p)
+        facj   <- n/(n-p)
         X          <- model.matrix(z)
         cluster    <- as.factor(z$cluster)
         nc         <- length(levels(cluster))
         j          <- order(cluster)
         clus.size  <- table(cluster)
         clus.start <- c(1, 1 + cumsum(clus.size))
-        ## The dimension of X needs to be adjusted 
-        X <- X[j, nNA, drop = FALSE]        
         w <- w[j]
         r <- r[j]    
-        r <- r*w        
-        mr2 <- function() {
-            res <- NULL
-            for (jj in 1:nc) {
-                ind   <- clus.start[jj]+ (0:(clus.size[jj]-1)) 
-                Xi    <- X[ind,,drop=FALSE]
-                Hgg   <- chol(diag(length(ind))-Xi%*%R%*%t(Xi), pivot = TRUE)
-                pivot <- attr(Hgg, "pivot")
-                oo    <- order(pivot)
-                Hgg   <- Hgg[,oo]
-                res   <- c(res, solve(Hgg)%*%r[ind])
-            }
-            res
-        }
+        X <- X[j, nNA, drop = FALSE]*c(sqrt(w))        
+        r <- r*sqrt(w)
         
-        mr3 <- function() {
-            res <- NULL
-            for (jj in 1:nc) {
-                ind <- clus.start[jj]+ (0:(clus.size[jj]-1)) 
-                Xi  <- X[ind,,drop=FALSE]
-                Hgg <- solve(diag(length(ind))-Xi%*%R%*% t(Xi))
-                res <- c(res, Hgg%*%r[ind])
-            }
-            sqrt((nc-1)/nc)*res
-        }
+        ## mr2 <- function() {
+        ##     res <- NULL
+        ##     for (jj in 1:nc) {
+        ##         ind   <- clus.start[jj]+ (0:(clus.size[jj]-1)) 
+        ##         Xi    <- X[ind,,drop=FALSE]
+        ##         Hgg   <- chol(diag(length(ind))-Xi%*%R%*%t(Xi), pivot = TRUE)
+        ##         pivot <- attr(Hgg, "pivot")
+        ##         oo    <- order(pivot)
+        ##         Hgg   <- Hgg[,oo]
+        ##         res   <- c(res, solve(Hgg)%*%r[ind])
+        ##     }
+        ##     res
+        ## }
+        
+        ## mr3 <- function() {
+        ##     res <- NULL
+        ##     for (jj in 1:nc) {
+        ##         ind <- clus.start[jj]+ (0:(clus.size[jj]-1)) 
+        ##         Xi  <- X[ind,,drop=FALSE]
+        ##         Hgg <- solve(diag(length(ind))-Xi%*%R%*% t(Xi))
+        ##         res <- c(res, Hgg%*%r[ind])
+        ##     }
+        ##     sqrt((nc-1)/nc)*res
+        ## }
         
         res <- switch(EXPR = type,                       
-                      HC2 = mr2(),
-                      HC3 = mr3(),
+                      HC2 = .Call("resHC2", X, r, R, clus.start, clus.size, PACKAGE = "grpack"),
+                      HC3 = .Call("resHC3", X, r, R, clus.start, clus.size, PACKAGE = "grpack"),
                       sqrt((n-1)/(n-p) * nc/(nc-1))*r
                       )
         
         score <- X*c(res)
         clus.start <- clus.start[-(nc + 1)]
         storage.mode(clus.start) <- "integer"
-                                        #storage.mode(score) <- "double"
         sp <- p
         W <- matrix(
                     .Fortran("robcovf", n, sp, nc, clus.start, clus.size, 
@@ -440,6 +423,90 @@ vcov.reg <- function (object,
 }
 
 
+coeftestdefault <- function (x, vcov. = NULL, df = NULL, ...) 
+{
+    est <- coef(x)
+    if (is.null(vcov.)) 
+        se <- vcov(x)
+    else {
+        if (is.function(vcov.)) 
+            se <- vcov.(x)
+        else se <- vcov.
+    }
+    se <- sqrt(diag(se))
+    if (!is.null(names(est)) && !is.null(names(se))) {
+        anames <- names(est)[names(est) %in% names(se)]
+        est <- est[anames]
+        se <- se[anames]
+    }
+    tval <- as.vector(est)/se
+    if (is.null(df)) 
+        df <- df.residual(x)
+    if (is.null(df)) 
+        df <- 0
+    if (is.finite(df) && df > 0) {
+        pval <- 2 * pt(abs(tval), df = df, lower.tail = FALSE)
+        cnames <- c("Estimate", "Std. Error", "t value", "Pr(>|t|)")
+        mthd <- "t"
+    }
+    else {
+        pval <- 2 * pnorm(abs(tval), lower.tail = FALSE)
+        cnames <- c("Estimate", "Std. Error", "z value", "Pr(>|z|)")
+        mthd <- "z"
+    }
+    rval <- cbind(est, se, tval, pval)
+    colnames(rval) <- cnames
+    class(rval) <- "coeftest"
+    attr(rval, "method") <- paste(mthd, "test of coefficients")
+    return(rval)
+}
+
+##' coef is a method  for performing z and (quasi-)t
+##' tests of estimated coefficients through \code{reg}
+##'
+##' Details
+##' @title Testing Estimated Coefficients
+##' @param x a \code{reg} object
+##' @param vcov a covariance type
+##' @param df the degrees of freedom to be used. If this is a finite
+##' positive number a t test with df degrees of freedom is
+##' performed. In all other cases, a z test (using a normal
+##' approximation) is performed. If the \code{reg} has a
+##' \code{cluster} component and \df} is \code{NULL} a t test with G-1
+##' degrees of freedom is performed. 
+##' @param ... other arguments
+##' @rdname coeftest
+##' @S3method coeftest reg
+coeftest.reg <- function(x, vcov.=c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"), df = NULL) {
+    vcov. <- match.arg(vcov.)
+    b <- coef(x)
+    cluster <- FALSE
+    if(is.null(df) & !is.null(x$clusterby)) {
+        df <- length(unique(x$cluster))-1
+        cluster <- TRUE
+    }    
+    cov <- vcov(x, type = vcov.)
+    rval <- coeftestdefault(x, vcov.=cov, df = df)                    
+    attr(rval, "vcov") <- vcov
+    attr(rval, "df") <- df
+    attr(rval, "cluster") <- cluster
+    class(rval) <- c("coeftest.reg", "coeftest")
+    return(rval)
+}
+
+##' @S3method print coeftest.reg
+print.coeftest.reg <- function(x, ...)
+{
+  mthd <- attr(x, "method")
+  if(is.null(mthd)) mthd <- "Test of coefficients"
+  if(is.finite(df <- attr(x, "df")))
+      cat(paste("\n", mthd," with ",df, " df:\n\n", sep = ""))
+  else
+      cat(paste("\n", mthd,":\n\n", sep = ""))
+  printCoefmat(x, ...)
+  cat("\n")
+  invisible(x)
+}
 
 
 ##' @S3method confint reg
@@ -464,6 +531,8 @@ confint.reg <- function (object, parm, level = 0.95,
     ci[] <- cf[parm] + ses %o% fac
     ci
 }
+
+
 
 
 

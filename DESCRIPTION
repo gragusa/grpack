@@ -13,6 +13,7 @@ Depends:
 LinkingTo: Rcpp, RcppArmadillo
 Description: More about what it does (maybe more than one line)
 License: GPL (version 2 or later)
+ByteCompile: FALSE
 Collate:
     'bvar.R'
     'grpack.R'

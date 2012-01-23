@@ -331,9 +331,10 @@ print.summary.reg <-
 vcov.reg <- function (object,
                       type = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"),
                       ...) {
-
+    type <- match.arg(type)    
     iscluster <- !is.null(object$cluster)
-    type <- match.arg(type)
+    if(type=="const")
+        iscluster <- FALSE
     z <- object
     Qr <- z$qr    
     if (is.null(z$terms) || is.null(Qr))

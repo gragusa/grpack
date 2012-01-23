@@ -6,8 +6,8 @@ using namespace Rcpp;
 
 
 extern "C" {
-  SEXP wb_null2(SEXP Xr, SEXP Rr, SEXP yr, SEXP betar, SEXP resr, SEXP clusstartr,
-		SEXP clussizer, SEXP reps, SEXP wbtype) {
+  SEXP wb_null(SEXP Xr, SEXP Rr, SEXP yr, SEXP betar, SEXP resr, SEXP clusstartr,
+	       SEXP clussizer, SEXP reps, SEXP wbtype) {
 
   arma::mat X=Rcpp::as<arma::mat>(Xr);
   arma::mat XX=Rcpp::as<arma::mat>(Rr);

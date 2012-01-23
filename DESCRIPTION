@@ -15,13 +15,8 @@ Description: More about what it does (maybe more than one line)
 License: GPL (version 2 or later)
 ByteCompile: FALSE
 Collate:
-    'bvar.R'
     'grpack.R'
-    'hacks.R'
-    'mc1.R'
-    'mcmcMH.R'
     'output.R'
-    'outreg.R'
     'regression.R'
     'tsls.R'
     'utils.R'

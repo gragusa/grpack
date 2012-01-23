@@ -104,7 +104,6 @@ wildboot.reg <- function(obj, reps=999, null,
     br  <- rep(null, k)
     br[wr] <- null
     br[-wr] <- br0
-    browser()
     out <- .Call("wb_null", X, R, y, br, Ur, clus.start, clus.size, reps, wbtype, PACKAGE="grpack")
      
     coef.wb0            <- out$coef_wb[,wr]
@@ -173,9 +172,9 @@ print.reg.wb <- function(x, ...) {
     cat('\n')
     cat(' # reps: ', x$reps, '; distr: ', x$distr, sep = '')
     if(!is.null(x$cluster))
-        cat('; cluster:', x$clusterby)
+        cat('; cluster:', paste(deparse(x$clusterby)))
     if(!is.null(x$weights))
-        cat('; weighted:', x$weightedby)
+        cat('; weighted:', paste(deparse(x$weightedby)))
     cat('\n\n')
         
     cat('Null hypotheses:\n')
@@ -218,7 +217,7 @@ print.summary.reg.wb <- function(x, digits = max(3, getOption("digits") - 3), ..
     cat("\n\nModel:\n")
     cat(" ", paste(deparse(x$call), sep="\n", collapse = "\n"), "\n", sep="")
     if(!is.null(x$weights))
-        cat('; weighted:', x$weightedby)
+        cat('; weighted:', paste(deparse(x$weightedby)))
     cat('\n\n')
         
     cat('Null hypotheses:\n')

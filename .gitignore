@@ -1,0 +1,5 @@
+# Ignore DS_file
+.DS_Store
+
+# Ignore src-i386 and src-x64
+src-*

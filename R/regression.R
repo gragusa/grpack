@@ -167,11 +167,17 @@ summary.reg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "H
     }
     Qr <- object$qr
     if (is.null(z$terms) || is.null(Qr))
-	stop("invalid \'lm\' object:  no 'terms' nor 'qr' component")
+      stop("invalid \'lm\' object:  no 'terms' nor 'qr' component")
     n <- NROW(Qr$qr)
-    rdf <- n - p
+   
+    if(!is.null(z$clusterby)) {
+      rdf = length(unique(z$cluster))-1
+    } else {
+      rdf <- z$df.residual    
+    }
+    
     if(is.na(z$df.residual) || rdf != z$df.residual)
-        warning("residual degrees of freedom in object suggest this is not an \"lm\" fit")
+      warning("residual degrees of freedom in object suggest this is not an \"lm\" fit")
     p1 <- 1:p
     ## do not want missing values substituted here
     r <- z$residuals
@@ -179,17 +185,17 @@ summary.reg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "H
     w <- z$weights
     X <- model.matrix(object)
     if (is.null(w)) {
-        mss <- if (attr(z$terms, "intercept"))
-            sum((f - mean(f))^2) else sum(f^2)
-        rss <- sum(r^2)
-        w <- rep(1, n)
+      mss <- if (attr(z$terms, "intercept"))
+        sum((f - mean(f))^2) else sum(f^2)
+      rss <- sum(r^2)
+      w <- rep(1, n)
     } else {
-        mss <- if (attr(z$terms, "intercept")) {
-            m <- sum(w * f /sum(w))
-            sum(w * (f - m)^2)
-        } else sum(w * f^2)
-        rss <- sum(w * r^2)
-        r <- sqrt(w) * r
+      mss <- if (attr(z$terms, "intercept")) {
+        m <- sum(w * f /sum(w))
+        sum(w * (f - m)^2)
+      } else sum(w * f^2)
+      rss <- sum(w * r^2)
+      r <- sqrt(w) * r
     }
     resvar <- rss/rdf
     R <- chol2inv(Qr$qr[p1, p1, drop = FALSE]) ## solve(X'X)
@@ -200,33 +206,33 @@ summary.reg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "H
     ans <- z[c("call", "terms")]
     ans$residuals <- r
     ans$coefficients <-
-	cbind(est, se, tval, 2*pt(abs(tval), rdf, lower.tail = FALSE))
+      cbind(est, se, tval, 2*pt(abs(tval), rdf, lower.tail = FALSE))
     dimnames(ans$coefficients)<-
-	list(names(z$coefficients)[Qr$pivot[p1]],
-	     c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
+      list(names(z$coefficients)[Qr$pivot[p1]],
+           c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
     ans$aliased <- is.na(coef(object))  # used in print method
     ans$sigma <- sqrt(resvar)
     ans$df <- c(p, rdf, NCOL(Qr$qr))
     if (p != attr(z$terms, "intercept")) {
-	df.int <- if (attr(z$terms, "intercept")) 1L else 0L
-	ans$r.squared <- mss/(mss + rss)
-	ans$adj.r.squared <- 1 - (1 - ans$r.squared) * ((n - df.int)/rdf)
-        if(type=='const')
-            ans$fstatistic <- c(value = (mss/(p - df.int))/resvar,
-                                numdf = p - df.int, dendf = rdf)
-        else
-            ans$fstatistic <- tryCatch(c(value = (coef(object)[-1]%*%solve(V[-1,-1])%*%coef(object)[-1])/(p-1),
-                                df = p-1), error = function(e) NULL)
-                                
+      df.int <- if (attr(z$terms, "intercept")) 1L else 0L
+      ans$r.squared <- mss/(mss + rss)
+      ans$adj.r.squared <- 1 - (1 - ans$r.squared) * ((n - df.int)/rdf)
+      if(type=='const')
+        ans$fstatistic <- c(value = (mss/(p - df.int))/resvar,
+                            numdf = p - df.int, dendf = rdf)
+      else
+        ans$fstatistic <- tryCatch(c(value = (coef(object)[-1]%*%solve(V[-1,-1])%*%coef(object)[-1])/(p-1),
+                                     df = p-1), error = function(e) NULL)
+      
     } else ans$r.squared <- ans$adj.r.squared <- 0
     ##    ans$cov.unscaled <- R
     ans$vcov <- V[Qr$pivot[p1],Qr$pivot[p1]]
     ans$se <- se
     dimnames(ans$vcov) <- dimnames(ans$coefficients)[c(1,1)]
     if (correlation) {
-	ans$correlation <- (R * resvar)/outer(se, se)
-	dimnames(ans$correlation) <- dimnames(ans$cov.unscaled)
-        ans$symbolic.cor <- symbolic.cor
+      ans$correlation <- (R * resvar)/outer(se, se)
+      dimnames(ans$correlation) <- dimnames(ans$cov.unscaled)
+      ans$symbolic.cor <- symbolic.cor
     }
     if(!is.null(z$na.action)) ans$na.action <- z$na.action
     ans$type <- type
@@ -295,10 +301,10 @@ print.summary.reg <-
             format.pval(pchisq(x$fstatistic[1L], x$fstatistic[2L],
                                lower.tail = FALSE), digits=digits)
         cat('---\n')
-	cat("Multiple R-squared:", formatC(x$r.squared, digits=digits))
-	cat(", Adjusted R-squared:",formatC(x$adj.r.squared,digits=digits),
-	    "\nF-statistic:", formatC(x$fstatistic[1], digits=digits),
-	    "on", x$fstatistic[2])
+        cat("Multiple R-squared:", formatC(x$r.squared, digits=digits))
+        cat(", Adjusted R-squared:",formatC(x$adj.r.squared,digits=digits),
+            "\nF-statistic:", formatC(x$fstatistic[1], digits=digits),
+            "on", x$fstatistic[2])
         if(x$type=='const') cat(" and", x$fstatistic[3])
         cat(" DF, p-value:", fpval, "\n")
     }
@@ -441,24 +447,27 @@ coeftestdefault <- function (x, vcov. = NULL, df = NULL, ...)
         se <- se[anames]
     }
     tval <- as.vector(est)/se
-    if (is.null(df)) 
-        df <- df.residual(x)
-    if (is.null(df)) 
-        df <- 0
-    if (is.finite(df) && df > 0) {
-        pval <- 2 * pt(abs(tval), df = df, lower.tail = FALSE)
-        cnames <- c("Estimate", "Std. Error", "t value", "Pr(>|t|)")
-        mthd <- "t"
+    if (is.null(df)) {
+      if(!is.null(x$clusterby)) {
+        rdf = length(unique(x$cluster))-1
+      } else {
+        rdf <- x$df.residual    
+      }
+    }
+    
+    if (df > 0) {
+      pval <- 2 * pt(abs(tval), df = df, lower.tail = FALSE)
+      cnames <- c("Estimate", "Std. Error", "t value", "Pr(>|t|)")
+      mthd <-ifelse(is.finite(df), "t", "z")
     }
     else {
-        pval <- 2 * pnorm(abs(tval), lower.tail = FALSE)
-        cnames <- c("Estimate", "Std. Error", "z value", "Pr(>|z|)")
-        mthd <- "z"
+      stop('df must >0')
     }
     rval <- cbind(est, se, tval, pval)
     colnames(rval) <- cnames
     class(rval) <- "coeftest"
     attr(rval, "method") <- paste(mthd, "test of coefficients")
+    attr(rval, "df") <- df
     return(rval)
 }
 
@@ -482,10 +491,15 @@ coeftest.reg <- function(x, vcov.=c("HC1", "const", "HC", "HC0", "HC2", "HC3", "
     vcov. <- match.arg(vcov.)
     b <- coef(x)
     cluster <- FALSE
+    
     if(is.null(df) & !is.null(x$clusterby)) {
         df <- length(unique(x$cluster))-1
         cluster <- TRUE
-    }    
+    } else {
+      if(is.null(df)){
+        df <- x$df.residual
+      }
+    }   
     cov <- vcov(x, type = vcov.)
     rval <- coeftestdefault(x, vcov.=cov, df = df)                    
     attr(rval, "vcov") <- vcov
@@ -512,10 +526,10 @@ print.coeftest.reg <- function(x, ...)
 
 ##' @S3method confint reg
 confint.reg <- function (object, parm, level = 0.95,
-                         type = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"), ...) 
+                         vcov. = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"), ...) 
 {
     ## ... other argument passsed down to vcov.reg (for instance when type is HAC
-    type <- match.arg(type)
+    type <- match.arg(vcov.)
     cf <- coef(object)
     pnames <- names(cf)
     if (missing(parm)) 
@@ -524,8 +538,15 @@ confint.reg <- function (object, parm, level = 0.95,
         parm <- pnames[parm]
     a <- (1 - level)/2
     a <- c(a, 1 - a)
+    if(!is.null(object$clusterby)) {
+      rdf <- length(unique(object$cluster))-1
+    } else {
+      rdf <- object$df.residual
+    }
+  
     pct <- format.perc(a, 3)
-    fac <- qnorm(a)
+    
+    fac <- qt(a, df = rdf)
     ci <- array(NA, dim = c(length(parm), 2L), dimnames = list(parm, 
                                                pct))
     ses <- sqrt(diag(vcov(object, type = type, ...)))[parm]

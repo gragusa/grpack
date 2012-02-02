@@ -238,18 +238,6 @@ print.summary.reg.wb <- function(x, digits = max(3, getOption("digits") - 3), ..
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 ## wildboot.reg2 <- function(object, sim = 999, null = list(),
 ##                           type = c('radamacher', 'mtp', 'mn1','mn2'),
 ##                           vcov = c('HC1', 'HC2', 'HC3'))

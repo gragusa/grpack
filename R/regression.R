@@ -526,9 +526,9 @@ print.coeftest.reg <- function(x, ...)
 
 ##' @S3method confint reg
 confint.reg <- function (object, parm, level = 0.95,
-                         vcov. = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"), ...) 
+                         vcov. = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"), df=NULL, ...) 
 {
-    ## ... other argument passsed down to vcov.reg (for instance when type is HAC
+    ## ... other argument passsed down to vcov.reg (for instance when type is HAC)
     type <- match.arg(vcov.)
     cf <- coef(object)
     pnames <- names(cf)
@@ -538,14 +538,15 @@ confint.reg <- function (object, parm, level = 0.95,
         parm <- pnames[parm]
     a <- (1 - level)/2
     a <- c(a, 1 - a)
-    if(!is.null(object$clusterby)) {
-      rdf <- length(unique(object$cluster))-1
-    } else {
-      rdf <- object$df.residual
+    if(is.null(df)) {
+      if(!is.null(object$clusterby)) {
+        rdf <- length(unique(object$cluster))-1
+      } else {
+        rdf <- object$df.residual
+      }  
     }
   
     pct <- format.perc(a, 3)
-    
     fac <- qt(a, df = rdf)
     ci <- array(NA, dim = c(length(parm), 2L), dimnames = list(parm, 
                                                pct))

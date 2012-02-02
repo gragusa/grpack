@@ -1,123 +1,76 @@
 ##' @export
-stata.regression <- function(x,
-                             type = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"),
-                             full = TRUE, mask,...) {
-    type <- match.arg(type)    
-    sumx <- summary(x, type = type)
-    Cf   <- coef(sumx)
-    ci   <- confint(x, type = type, ...)
-    nCf  <- nrow(Cf)
-    vn   <- rownames(Cf)
+statify <- function(x,
+                    vcov. = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"),
+                    full = TRUE, mask, df=NULL, ...) {
+  if(missing(mask))
+    mask <- 1L:length(coef(x))
+  scipen <- options()$scipen
+  type <- match.arg(vcov.) 
+  coef <- coeftest(x, df = df)
+  coef <- cbind(coef, confint(x, vcov. = type))  
+  coef[,4] <- zapsmall(coef[,4], digits = 4)
+  coef <- coef[mask,] 
+  vn <- rownames(coef)
+  mm <- match('(Intercept)', vn)
+  if(!is.na(mm)) {
+    vn[mm] <- '_cons'   
+    vn   <- vn[c(2:length(vn),1)]
+    coef <- coef[c(2:length(vn),1),]
+  }
+  fcoef <- regformat(format.df(coef, numeric=FALSE), len = c(7,7,3,3,7,7),
+                     strip.zero = c(TRUE, TRUE, FALSE, FALSE, TRUE, TRUE),
+                     width = c(11, 11, 9, 8, 13, 12))
+  colnames(fcoef) <- colnames(coef)
+  rownames(fcoef) <- rownames(coef)
+  cf <- fcoef
+  
+  y <- names(x$model)[1]
+  
+  vn <- sapply(vn, FUN=function(u) paste(substr('            ', 1, 12-nchar(u)), 
+                                         u, sep=''))  
+  if(full) {
+    sumx <- summary(x)
+    fstat <- sumx$fstatistic
+    info <- matrix(0,5,1)
+    info[1,1] <- fstat[1L]
+    info[2,1] <- ifelse(length(fstat)==3, 
+                        pf(fstat[1L], fstat[2L], fstat[3L], lower.tail = FALSE),
+                        pchisq(fstat[1L], fstat[2L], lower.tail = FALSE))      
+    info[2,1] <- zapsmall(info[2,1], digits=4)
+    info[3,1] <- sumx$r.squared
+    info[4,1] <- sumx$adj.r.squared
+    info[5,1] <- sqrt(sum(residuals(sumx)^2)/x$df)
+    info <- matrix(apply(info, 1, format, scientific=0), 1,5, byrow=TRUE)
+    info <- regformat(info, len = c(4, 5, 5, 5, 6), strip.zero=rep(FALSE, 5),
+                      width=rep(7,5))
+    ind <- which(as.numeric(info)>10^5)
+    info[1,ind] <- paste(format.df(as.numeric(info[1,ind])/10^6, numeric=FALSE, dec=1), 'e+06', sep='')
     
-    if(missing(mask))
-        mask <- 1L:nCf
-
-    Cf  <- Cf[mask,]
-    nCf <- nrow(Cf)
-    vn  <- vn[mask]
-    ci  <- ci[mask,]
-    vn <- abbreviate(vn, 12)
+    rank <- formatC((x$rank-1), 'd', width = 3, digits = 0, flag = "# ")
+    dfr  <- format(ceiling(x$df+x$rank), scientific=(1-scipen))
+    dfr  <- paste(strtrim('      ',6-nchar(dfr)), dfr, sep='')
+    obs  <- format(ceiling(x$df), scientific=(1-scipen))
+    obs  <- paste(strtrim('      ',6-nchar(dfr)), dfr, sep='')
     
-    mm <- match('(Intercept)', rownames(Cf))
-    
-    intercept <- 0
-    if(!is.na(mm)) {
-        rownames(Cf)[mm] <- '_cons'
-        init <- 1
-    }
-
-    ddc <- cbind(ci, Cf)
-    y <- names(x$model)[1]
-    hh <- abbreviate(y, min = 11)
-
-    if(nchar(hh)==11)
-        substr(hh, start = 10, stop = 10) <- '~'   
-    y <- format(hh, width = 12, justify = 'right')
-    
-    ina <- is.na(Cf[,1])
-        
-    if(intercept)
-        ddc <- ddc[c(2:(nCf-1),1), c(3:5, 1:2)]
-    else
-        ddc <- ddc[, c(3:5, 1:2)]
-
-    prettyfy <- function(x, width, digits, strip0 = FALSE, fix = FALSE) {
-        if(fix)
-            digit=digits
-        else
-            digit <- max(0, min(digits, digits-log10(max(abs(x)))))
-        
-        x <- formatC(x, format = 'f', width = width,
-                     digits = digit,
-                     preserve.width = 'common', flag="#")
-        if(strip0) {
-            x <- gsub("-0.", " -.", x, fixed = TRUE)
-            x <- gsub("0.",   " .", x, fixed = TRUE)
-        }
-        x
-    }
-
-    if(type=='const')
-        pv <- pt(abs(ddc[,3]), lower = FALSE, df = x$rank-1)*2
-    else
-        pv <- pnorm(abs(ddc[,3]), lower = FALSE)*2
-
-    pv <- zapsmall(pv, digits = 4)
-    fpv <- formatC(pv, 'f', width = 7, digits = 4, preserve.width = 'common', flag="#")
-    oddc <- matrix(0, nrow(ddc), ncol(ddc))
-    for(j in 1:nCf) {
-        if(!is.na(ddc[j,1])) {
-            oddc[j,1] <- prettyfy(ddc[j,1], 10, 7, TRUE)
-            oddc[j,2] <- prettyfy(ddc[j,2], 10, 7, TRUE)
-            oddc[j,3] <- prettyfy(ddc[j,3], 8, 2,  FALSE, TRUE)
-            oddc[j,4] <- prettyfy(ddc[j,4], 10, 7, TRUE)
-            oddc[j,5] <- prettyfy(ddc[j,5], 10, 7, TRUE)
-        }
-    }
-            
-    ddc <- oddc
-
-    xn <- cbind(ddc[,1:3], fpv, ddc[,4:5])
-    vn <- formatC(vn, width = 12, flag = "#")
-    
-    if(full) {
-        vv  <- matrix(0,1,6)
-        vv[1,1] <- sumx$r.squared
-        vv[1,2] <- sumx$adj.r.squared
-        vv[1,3] <- sqrt(sum(residuals(sumx)^2)/x$df)
-        vv[1,4] <- if(length(x$fstatistic)==3)
-            pf(sumx$fstatistic[1L], sumx$fstatistic[2L], sumx$fstatistic[3L], lower.tail = FALSE)
-        else
-            pchisq(sumx$fstatistic[1L], sumx$fstatistic[2L], lower.tail = FALSE)
-        
-        rank <- formatC((x$rank-1), 'd', width = 3, digits = 0, flag = "# ")
-        dfr  <- formatC(x$df+x$rank, 'd', width = 6, digits = 0, flag = "# ")
-        vv <- zapsmall(vv, 5)
-
-        fvv <- formatC(vv, format = 'f',
-                       width = 8, digits = 4,
-                       flag = "#")
-
-        Fs <- formatC(sumx$fstatistic[1], 'f', width = 9, digits = max(0, 4-log10(max(abs(sumx$fstatistic[1])))), flag = "#")
-        
-        cat('Linear regression                                    Number of obs = ', dfr,'\n')
-        cat('                                                     F(',rank,',', dfr,') = ', Fs,'\n', sep='')
-        cat('                                                     Prob > F      = ', fvv[1,4],'\n')
-        cat('                                                     R-squared     = ', fvv[1,1],'\n')
-        cat('                                                     Adj R-squared = ', fvv[1,2],'\n')
-        cat('                                                     Root MSE      = ', fvv[1,3],'\n')
-    }
-
-    colnames(xn) <- rep('',6)
-    cat('------------------------------------------------------------------------------\n')
-    if(type!="const")
-        cat('                            Robust\n')
-    cat(y,' |     Coef.   Std. Err.      t     P>|t|     [95% Conf. Interval]\n', sep = '')
-    cat('------------------------------------------------------------------------------\n')
-    for(j in 1:nCf)
-        cat(vn[j],' |', xn[j,1],' ',xn[j,2],' ', xn[j,3],'  ',xn[j,4],'   ',xn[j,5],'  ',xn[j,6],'\n', sep ='')
-
-    cat('------------------------------------------------------------------------------\n')
+    cat('Linear regression                                     Number of obs = ', dfr,'\n')
+    cat('                                                      F(',rank,',', dfr,') = ', info[1,1],'\n', sep='')
+    cat('                                                      Prob > F      =', info[1,2],'\n')
+    cat('                                                      R-squared     =', info[1,3],'\n')
+    cat('                                                      Adj R-squared =', info[1,4],'\n')
+    cat('                                                      Root MSE      =', info[1,5],'\n')
+  }
+  
+  cat('------------------------------------------------------------------------------\n')
+  if(type!="const")
+    cat('                              Robust\n')
+  cat('     ',y,' |      Coef.    Std. Err.     t    P>|t|     [95% Conf. Interval]\n', sep = '')
+  cat('------------------------------------------------------------------------------\n')
+  for(j in 1:length(coef(x)))
+    ##cat(vn[j],' |', cf[j,1],' ',cf[j,2],' ', cf[j,3],'  ',cf[j,4],'   ',cf[j,5],'  ',cf[j,6],'\n', sep ='')
+    cat(paste(vn[j], ' |', cf[j,1], cf[j,2], cf[j,3], cf[j,4], cf[j,5], cf[j,6], sep=''),'\n')
+  
+  
+  cat('------------------------------------------------------------------------------\n')
 }
 
 ##' @export
@@ -419,4 +372,45 @@ stripzero <- function(string)
     if(!is.na(pmatch('0.',string)))
         string <- paste('.',strsplit(string, '0.')[[1]][2], sep = '')
     return(string)
+}
+
+
+
+
+
+
+regformat  <- function(x, len, strip.zero, width,...) {
+  ## Stata Default for coef
+  ##     len <- c(8,7,4,4,7,7)
+  ##     strip.zero <- c(TRUE, TRUE, FALSE, FALSE, TRUE, TRUE)
+
+  nr  <- nrow(x)
+  nc  <- ncol(x)  
+  xout <- matrix('', ncol=nc, nrow=nr)
+  for(h in 1:nc) {
+    for(j in 1:nr){
+      tmp <- strsplit(x[j,h], "\\.")[[1]]
+      intg <- gsub("^\\s+|\\s+$", "", tmp[1])
+      mant <- tmp[2]
+      nintg <- nchar(intg)-ifelse(strip.zero[h], (intg=="0"|intg=="-0"), 0)
+      nmant <- nchar(mant)
+      decimal <- len[h]-nintg+(strsplit(intg, '-')[[1]][1]=='')
+      if(decimal<=0){
+        tmp <- format.df(ceiling(as.numeric(x[j,h])), numeric=FALSE)
+      } else {
+        tmp <- format.df(as.numeric(x[j,h]), dec = decimal, numeric.dollar=FALSE)
+      }
+      
+      if(strip.zero[h]) {
+        tmp0 <- strsplit(tmp, "\\.")[[1]]
+        if(tmp0[1]=="0")
+          tmp <- paste('.', tmp0[2], sep= '')
+        if(tmp0[1]=="-0")
+          tmp <- paste('-.', tmp0[2], sep= '')  
+      }
+      xout[j,h]  <- paste(substr('          ', 1, width[h]-nchar(tmp)), tmp, sep='')
+    }  
+  }
+  ##matrix(format.df(as.numeric(xout), numeric=F), ncol=nc, nrow=nr)
+  xout
 }

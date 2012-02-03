@@ -459,7 +459,7 @@ beautify.out.matrix <- function(z, dec = 2){
   
   x[seqq,] <- subs
   
-  stars <- matrix("", outrows, 2)
+  stars <- matrix("", outrows, ncol(x))
   stars[(seqq-1),] <- z$stars
   z$out.matrix <- matrix(paste(x, stars, sep=''), outrows, ncol(x))
   rownames(z$out.matrix) <- rownames(x)
@@ -789,7 +789,7 @@ apsrtable2 <- function (modelList, model.names=NULL, order=c("lr","rl","longest"
     model.out <- model.se.out <- star.out <- rep(NA,length(coefnames))
     model.out[var.pos] <- x$coefficients[,1]
     star.out[var.pos] <- apsrStars(x$coefficients,stars=stars,lev=lev,signif.stars=TRUE)
-    star.out
+    star.out[incl]
   })
   
   out.table <- lapply(model.summaries, function(x){  

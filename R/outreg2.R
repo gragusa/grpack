@@ -468,7 +468,118 @@ beautify.out.matrix <- function(z, dec = 2){
   z
 }
 
-outreg <- function(..., model.names=NULL, order=c("lr","rl","longest"), 
+##' Function to arrange regression outputs into an well-formatted
+##' LaTeX illustrative tables of multiple statistical models. 
+##'
+##' \code{outreg2} borrows heavily from the \code{apsrtable}
+##' package. It preserves its flexibility in that many statistical
+##' models can be easily considered. It extends it by allowing finer
+##' control on the LaTeX output. This flexibility is obtained by using
+##' a modified version of the finction \code{latex} of the
+##' \code{Hmisc} package. 
+##' @title Arrange regression outputs into an illustrative table
+##' @param ... the statistical models.
+##' @param model.names Optional vector of names to use as column
+##' headings in the table. If more models than names are supplied,
+##' unnamed models are numbered (starting at one more than the number
+##' of names).
+##' @param order Determines the order in which terms (rows) are
+##' included in the output when more than one model (column) is
+##' present. “lr” and “rl” take the order of terms from the first or
+##' last (leftmost or rightmost) model and appends new terms as they
+##' are encountered. “longest” uses the order of terms in the model
+##' with the most \code{terms.Default = “lr”}.
+##' @param omitcoef An optional integer or character vector of
+##' coefficient indices, or an expression involving coefnames that
+##' evaluates to integer or character, of rows to exclude from the
+##' output. See details.
+##' @param omit.model An optional integer or character vector of model
+##' indices (in the order they are entred) to be excluded from the
+##' output. Useful if \code{order="largest"}, and the largest model is
+##' not to be shown. See details.
+##' @param coef.names An optional vector of names for coefficients. It
+##' is recommended to establish the \code{omitcoef} and \code{order}
+##' settings with automatic symbolic naming before supplying a vector
+##' of “pretty” variable names. If automatic symbolic naming is used,
+##' names are taken from the variables in the models and “sanitized”
+##' for latex. If \code{coef.names} are supplied, they must be valid
+##' latex, with double-backslash escape characters. 
+##' @param stars how statistical significance “stars”, either "stata",
+##' "default", or 1. "stata" is based on the stata default and gives
+##' three stars.  "default" uses the \code{R} default,  not to be
+##' confused with the function's (perhaps confusing) Default="stata"
+##' @param lev When \code{stars=1}, what level should be used for the test to
+##' reject statistical insignificance and bestow the glittering star?
+##' Disable decoration entirely by specifying \code{lev=0}. \code{Default=.05}.
+##' @param additional.rows A matrix with number of column equal to the
+##' number of included models for additional annotation of the
+##' table. Useful for fixed effects, country effects,
+##' etc. specifications. 
+##' @param title 
+##' @param file name of the file to create. The default is not to
+##' create a file and to have the generated LaTeX code just printed to
+##' standard output. This is especially useful when running under
+##' Sweave in R using its results=tex tag, to save having to manage
+##' many small external files. When file="", latex keeps track of
+##' LaTeX styles that are called for by creating or modifying an
+##' object \code{latexStyles} (in \code{.GlobalTemp} in R or in frame
+##' 0 in S-Plus). \code{latexStyles} is a vector containing the base
+##' names of all the unique LaTeX styles called for so far in the
+##' current session. See the end of the examples section for a way to
+##' use this object to good effect. For dvips, file is the name of an
+##' output postscript file.
+##' @param append defaults to FALSE. Set to TRUE to append output to
+##' an existing file.
+##' @param label a text string representing a symbolic label for the
+##' table for referencing in the LaTeX \code{\label} and \code{\ref}
+##' commands. \code{label} is only used if caption is given.
+##' @param rowlabel 
+##' @param rowlabel.just 
+##' @param cgroup 
+##' @param n.cgroup 
+##' @param rgroup 
+##' @param n.rgroup 
+##' @param cgroupTexCmd 
+##' @param rgroupTexCmd 
+##' @param rownamesTexCmd 
+##' @param colnamesTexCmd 
+##' @param cellTexCmds 
+##' @param rowname 
+##' @param cgroup.just 
+##' @param colheads 
+##' @param extracolheads 
+##' @param extracolsize 
+##' @param dcolumn 
+##' @param numeric.dollar 
+##' @param cdot 
+##' @param longtable 
+##' @param draft.longtable 
+##' @param ctable 
+##' @param booktabs 
+##' @param table.env 
+##' @param here 
+##' @param lines.page 
+##' @param caption 
+##' @param caption.lot 
+##' @param caption.loc 
+##' @param double.slash 
+##' @param vbar 
+##' @param collabel.just 
+##' @param na.blank 
+##' @param insert.bottom 
+##' @param first.hline.double 
+##' @param where 
+##' @param size 
+##' @param center 
+##' @param landscape 
+##' @param multicol 
+##' @param math.row.names 
+##' @param math.col.names 
+##' @param rowcolors 
+##' @return A character vector containing the LaTeX table.
+##' @author Giuseppe Ragusa
+##' @export
+outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"), 
                    omitcoef=NULL, omit.model=NULL,
                    coef.names=NULL,                       
                    stars='stata',lev=.05,
@@ -747,323 +858,6 @@ apsrtable2 <- function (modelList, model.names=NULL, order=c("lr","rl","longest"
   list(out.matrix=out.matrix, out.info=out.info, stars = star.out, outrows=outrows)
 }
 
-
-apsrtable <- function (..., 
-                       se=c("robust","vcov","both","pval"),
-                       # model.names can be shorter, others numbered;
-                       # numbers start at value of model.counter
-                       model.names=NULL, model.counter=1, digits=2,
-                       # stars="default" prints R default
-                       # this function default is one star at .05
-                       stars=1,lev=.05,
-                       align=c("left","center","right"),
-                       order=c("lr","rl","longest"),
-                       notes=list(se.note,stars.note),
-                       omitcoef=NULL,coef.names=NULL,
-                       coef.rows=2,
-                       multicolumn.align=c("center","left","right"),
-                       col.hspace=NULL,
-                       Sweave=FALSE, float="table",
-                       Minionfig=FALSE,
-                       label=NULL,caption=NULL,
-                       caption.position=c("above","below") 
-                       ) {
-  x <- list()
-  signif.stars <- TRUE
-  order <- match.arg(order,c("lr","rl","longest"))
-  opts <- match.call(expand.dots=FALSE)
-  se <- match.arg(se,c("robust","vcov","both","pval"))
-  align <- substr(align,1,1)
-  align <- match.arg(align,c("l","c","r"))
-  multicolumn.align <- match.arg(substr(multicolumn.align,1,1),
-                                 c("c","l","r"))
-  adigits <- ifelse(align=="c",
-                    -1,
-                    digits)
-  caption.position <- match.arg(substr(caption.position,1,1), c("a","b"))
-  models <- list(...)
-  nmodels <- length(models)
-
-  ## used to multiply later for column counts
-  coef.cols <- ifelse(coef.rows==2, 1, 2)
-
-  ## Two default behaviors for col.hspace:
-  ##  if in two-column-per-model mode, default to 2em
-  ##  otherwise, empty. If not "", add some latex around it.
-  if (is.null(col.hspace)) {
-  col.hspace <- ifelse(coef.cols==1,"",
-                       "2em")
-  }
-  if(col.hspace != "") {
-    col.hspace <- paste("@{\\hspace{",col.hspace,"}}",sep="")
-  }
-  colspec <- paste("{",
-                   align,
-                   paste(rep(paste("D{.}{.}{",
-                                   rep(adigits,coef.cols),
-                                    "}",
-                                   sep="",collapse=""),nmodels),
-                         collapse=col.hspace)
-                   ,"}",collapse="")
-  if(float=="longtable") {
-    long <- TRUE
-    floatspec <- paste("\\begin{",float,"}",colspec,"\n",
-                       ifelse(caption.position=="a",
-                              paste("\\caption{",caption,"}\n\\label{",label,"}",sep=""),
-                              ""),
-                       sep="")
-  } else
-  {
-    long <- FALSE
-    floatspec <- paste(ifelse(!Sweave,
-                              paste("\\begin{",float,"}[!ht]\n",
-                                    ifelse(caption.position=="a",
-                                           paste("\\caption{",caption,"}\n\\label{",label,"}",sep=""),
-                                           ""),sep=""),
-                              "" ),
-                       paste("\n\\begin{tabular}",colspec,sep=""))
-  }
-  x <- paste(floatspec,
-             ifelse(long,"\\\\",""),
-             sep="")
-
-  if(Minionfig){
-    x <- c(x,"%Uncomment the following line and the end one to change figure versions\n%if you are using a full-featured family such as Minion Pro.\n\\figureversion{tabular}\n")
-  }
-
-  
-  ## get the summaries for the objects
-  model.summaries <- lapply(models,
-                            ## If an apsrtableSummary exists, use it
-                            ## Otherwise, use summary.
-                            function(x) {
-                              s <- try(apsrtableSummary(x), silent=TRUE) 
-                              if (inherits(s, "try-error")) {
-                                s <- summary(x)
-                              }
-                              if(!is.null(x$se) && se != "vcov") {
-                                est <- coef(x)
-                                if(class(x$se) == "matrix") {
-                                  x$se <- sqrt(diag(x$se))
-                                } 
-                                s$coefficients[,3] <- tval <- est / x$se
-                                e <- try(s$coefficients[,4] <-
-                                  2 * pt(abs(tval),
-                                         length(x$residuals) - x$rank,
-                                         lower.tail=FALSE),silent=TRUE)
-                                if(inherits(e,"try-error")){
-                                  s$coefficients[, 4] <-
-                                    2*pnorm(abs(tval),lower.tail=FALSE)
-                                }
-                                s$se <- x$se }
-                              if(se == "pval") {
-                                s$coefficients[,2] <- s$coefficients[,4]
-                                
-                              }
-                              return(s)
-                            } )
-  
-  ## Quietly switch the se.note to the pval.note as needed
-  if(se=="pval") { se.note <- pval.note }
-
-  ## Set up the model names
-  ## If there's a vector of names, use that, or as many as there are
-  ## and either all or the remainder.
-  ## Optionally, model.number.start allows you to resetcounter
-  ## TO DO: allow model "name" attribute to be used
-  ##        but overridden by vector here.
-  if (is.null(model.names)) {
-    m.first = model.counter; m.last=m.first+(nmodels-1)
-    model.names=paste("Model", m.first:m.last)
-  } else if (!is.null(model.names) && (length(model.names) < nmodels) ) {
-    m.first = length(model.names)+1
-    model.names=c(model.names, paste( "Model", m.first:nmodels))
-  }
-  
-## get and order the coefficient names from all models
-  coefnames <- orderCoef(model.summaries, order=order)
-
-  ## mark those to omit from the output
-  incl <- rep(TRUE,length(coefnames))
-  names(incl) <- coefnames
-  if(!is.null(omitcoef)) {
-    ## Boris Shor <boris@bshor.com> asked how to omitcoef by regex
-    ##  this line enables omitcoef=expression() 2010-03-17
-    ##  OR if you want to mix modes or provide multiple expr
-    ##  you can supply a list() eg list(expression(grep), 15) 
-    omitcoef <- unlist(sapply(omitcoef, eval.parent, n=2 ))
-    #print(omitcoef)
-    incl[omitcoef] <- FALSE
-  }
-## now figure out position of each coef in each model
-model.summaries <- coefPosition(model.summaries, coefnames)
-  
-  ## Now that the coef name matching is done, switch to pretty names
-  ## if they are supplied. 
-    if(!is.null(coef.names)) {
-      if(length(coef.names) != sum(incl)) {
-        warning("Supplied coef.names not the same length as output. Check automatic names before supplying 'pretty' names.\n")
-      }
-      coefnames[incl] <- coef.names
-    } else {
-      coefnames[incl] <- sanitize(coefnames[incl])
-    }
-  
-  
-  out.table <- lapply(model.summaries, function(x){  
-    var.pos <- attr(x,"var.pos")
-    model.out <- model.se.out <- star.out <- rep(NA,length(coefnames))
-    model.out[var.pos] <- x$coefficients[,1]
-    star.out[var.pos] <- apsrStars(x$coefficients,stars=stars,lev=lev,signif.stars=TRUE)
-    model.out <- ifelse(!is.na(model.out),
-                        paste(formatC(model.out,digits=digits,format="f"),
-                              star.out),
-                        "")
-    
-    
-    
-    model.se.out[var.pos] <- x$coefficients[,2]
-    if( !is.null(x$se) & se %in% c("robust","both") ) {
-      model.se.out[var.pos] <- x$se
-    }
-    
-    model.se.out <- ifelse(!is.na(model.se.out),
-                           paste("(",
-                                 formatC(model.se.out,
-                                         digits=digits,
-                                         format="f"),
-                                 ")",sep=""),
-                           "")
-    if(se=="both" && !is.null(x$se)){      
-      model.se.out[var.pos] <- ifelse(model.se.out != "",
-                             paste(model.se.out," [",
-                                   formatC(x$coefficients[,2],
-                                           digits=digits,
-                                           format="f"),
-                                   "]",sep=""),
-                             "")
-    }
-    
-    if(coef.rows==2) {
-      ## Create two side by side columns and mesh them together
-      model.out <- rep(model.out[incl], each=2)
-      model.se.out <- rep(model.se.out[incl], each=2)
-      pos.se <- (1:length(model.out))[(1:length(model.out) %% 2==0)]
-      model.out[pos.se] <- model.se.out[pos.se]
-      ## Add a new model info attribute to the model's output entry
-      ## To change modelInfo for a given model, change the method for it
-      ## see ?modelInfo, it is reasonably well documented.
-    } else {
-      ## two columns per model
-      model.out <- model.out[incl]
-      model.out <- cbind(model.out, model.se.out[incl])
-    }
-    attr(model.out,"model.info") <- modelInfo(x)  
-    return(model.out)
-  })
-  
-  out.matrix <- matrix(unlist(out.table),
-                       length(coefnames[incl])*coef.rows,
-                       nmodels*coef.cols)
-  
-  
-                     
-  out.matrix <- cbind(rep(coefnames[incl],each=coef.rows), out.matrix)
-  if(coef.rows==2) {
-    out.matrix[ (row(out.matrix)[,1] %% 2 ==0) , 1] <- ""  
-  }
-  out.info <- lapply(out.table, attr, "model.info")
-  info.names <- orderCoef(out.info)
-  out.info <- coefPosition( out.info, orderCoef(out.info) )
-  out.info <- lapply(out.info, function(x) {
-    var.pos <- attr(x,"var.pos")
-    model.out <- rep("",length(info.names))
-    model.out[var.pos] <- coef(x)
-    return(model.out)
-  } )
-
-  out.info <- matrix(unlist(out.info), length(info.names), nmodels)
-  out.info <- cbind(as.character(info.names), out.info)
-  
-  if(coef.rows==2) {
-    out.matrix <- rbind(c("%",model.names ),out.matrix)
-  }
-  outrows <- nrow(out.matrix)
-  
-  ## This does the pretty latex formatting, where commented model names
-  ## line up with appropriately sized columns of numbers.
-
-  ## Paul Johnson suggested a 'wide' or two column format for tables
-  ## which then means model info needs to be underneath the two
-  ## in a multicolumn span. But, for normal (two row, one column per coef)
-  ## format, this is extraneous markup and hard to read.
-  if(coef.cols==1) {
-    out.matrix <- rbind(out.matrix,out.info)
-    out.matrix[,-1] <- format(out.matrix[,-1])
-    out.matrix[,1] <- format(out.matrix)[,1]
-    out.matrix <- apply(out.matrix, 1, paste, collapse=" & ")
-    out.info <- out.matrix[ (1+outrows) : length(out.matrix) ]
-    out.matrix <- out.matrix[ 1:outrows ]
-  } else {
-    out.matrix <- format(out.matrix)
-    out.matrix <- apply(out.matrix, 1, paste, collapse=" & ")
-    ## now do the out.info as multicolumn blocks
-    out.info[,-1] <- format(out.info[,-1])
-    out.info[,-1] <- sapply(as.matrix(out.info[,-1]), function(x) {
-      paste("\\multicolumn{",coef.cols,"}{",multicolumn.align,
-            "}{",x,"}",sep="")
-    })
-    out.info[,1] <- format(out.info[,1])
-    out.info <- apply(out.info, 1, paste, collapse=" & ")
-  }
-  
-  headrow <- paste("\n\\hline\\hline \n",
-                   paste(" &", paste("\\multicolumn{",coef.cols,"}{",
-                               multicolumn.align,"}{",
-                               model.names,"}", collapse=" & ")  ),
-               "\\\\ \\hline\n")
-  if(long) { headrow <- paste(headrow,"\\endhead\n",sep="") }
-  x <- c(x, headrow)
-  
-  #x <- c(x,"")
-  x <- c(x,paste(out.matrix, collapse="\\\\ \n"))
-  x <- c(x,"\\\\\n")
-  x <- c(x,paste(out.info, collapse="\\\\ \n"))
-  
-  ## Do notes
-   ## Evaluate the notes list
-    ## Switch the se to either robust or regular --
-  ## Robust is the default, but if only vcov are given,
-  ## quietly switch the argument.
-  se <- ifelse((se != "vcov" &&
-                sum(unlist(lapply(model.summaries,
-                                  function(x) !is.null(x$se))) >0 ) ) ,
-               "robust","vcov")
-  myenv <- new.env()
-  notes <- lapply(notes, do.call,
-                  args=list(env=myenv))
-  
-  x <- c(x,"\\\\ \\hline\n")
-  notes <- lapply(notes, function(x) {  # eek! note coef cols was wrong
-                                        # fixed 2009-05-07 mjm
-    paste("\\multicolumn{",(nmodels*coef.cols)+1,"}{l}{\\footnotesize{", x , "}}",sep="")
-             } )
-  x <- c(x, paste(notes, collapse="\\\\\n"))
- 
-  if(!long) { x <- c(x,"\n\\end{tabular}") }
-  if(long) { x <- c(x,"\n\\end{longtable}") }
-  if(caption.position=="b") {
-    x <- c(x, paste("\n\\caption{",caption,"}\n\\label{",label,"}",sep=""))
-  }
-  x <- c(x,"\n")
-  if(Minionfig) {x <- c(x,"\n\\figureversion{proportional}\n") }
-  if(!Sweave & !long) { x <- c(x,paste("\\end{",float,"}\n",sep="")) }
-  class(x) <- "apsrtable"
-  return(x)
-}
-
-
-
 apsrStars <- function (x, digits = max(3, getOption("digits") - 2),
                        signif.stars = getOption("show.signif.stars"), 
                        signif.legend = signif.stars,
@@ -1173,34 +967,52 @@ apsrStars <- function (x, digits = max(3, getOption("digits") - 2),
     return()
   }
 
-
+#'  summary methods used by \code{"outreg2"}. 
+#'
+#' @x ... a model passed to \code{outreg2}.
+#'
+#' @return A \code{model.info} object. 
+#' 
+#' @seealso \code{\link{outreg2}} and \code{\link{apsrtable}}.
+#' 
+#' @export
+#' @docType methods
+#' @rdname modelInfo
 setGeneric("modelInfo", function(x) standardGeneric("modelInfo") )
 
-
+##' @rdname modelInfo
+##' @aliases modelInfo.summary.reg
+##' @export
 modelInfo.summary.reg <- function(x) {
-  env <- sys.parent()
-  digits <- evalq(digits, envir=env)
-  model.info <- list(    
+    env <- sys.parent()
+    digits <- evalq(digits, envir=env)
+    model.info <- list(    
     "$R^2$"=formatC(x$r.squared,format="f",digits=digits),
     "adj. $R^2$"=formatC(x$adj.r.squared,format="f",digits=digits),
-    "$N$"=formatC(sum(x$df[1:2]),format="d")    
-  class(model.info) <- "model.info"
-  invisible(model.info) 
+    "$N$"=formatC(sum(x$df[1:2]),format="d"))    
+    class(model.info) <- "model.info"
+    invisible(model.info) 
 }
 
-
+##' @rdname modelInfo
+##' @aliases modelInfo.summary.lm
+##' @export
 modelInfo.summary.lm <- function(x) {
-  env <- sys.parent()
-  digits <- evalq(digits, envir=env)
-  model.info <- list(
-                     "$N$"=formatC(sum(x$df[1:2]),format="d"),
-                     "$R^2$"=formatC(x$r.squared,format="f",digits=digits),
-                     "adj. $R^2$"=formatC(x$adj.r.squared,format="f",digits=digits),
-                     "Resid. sd" = formatC(x$sigma,format="f",digits=digits))
-  class(model.info) <- "model.info"
-  invisible(model.info) 
+    env <- sys.parent()
+    digits <- evalq(digits, envir=env)
+    model.info <- list(
+                       "$N$"=formatC(sum(x$df[1:2]),format="d"),
+                       "$R^2$"=formatC(x$r.squared,format="f",digits=digits),
+                       "adj. $R^2$"=formatC(x$adj.r.squared,format="f",digits=digits),
+                       "Resid. sd" = formatC(x$sigma,format="f",digits=digits))
+    class(model.info) <- "model.info"
+    invisible(model.info) 
 }
 
+
+##' @rdname modelInfo
+##' @aliases modelInfo.summary.glm
+##' @export
 modelInfo.summary.glm <- function(x) {
   env <- sys.parent()
   digits <- evalq(digits, envir=env)
@@ -1224,7 +1036,10 @@ modelInfo.summary.glm <- function(x) {
 ## 2009-02-25 mjm
 ## modelInfo request from Antonio Ramos for AER Tobit function
 ## Should be similar for 'survreg' objects, but without (necessarily)
-## censoring info.. 
+## censoring info..
+##' @rdname modelInfo
+##' @aliases modelInfo.summary.tobit
+##' @export
 "modelInfo.summary.tobit" <- function(x) {
  env <- sys.parent()
  digits <- evalq(digits, envir=env)
@@ -1241,6 +1056,9 @@ formatC(x$loglik[2],format="f",digits=digits),
  class(model.info) <- "model.info"
  return(model.info)
 }
+##' @rdname modelInfo
+##' @aliases modelInfo.summary.gee
+##' @export
 "modelInfo.summary.gee" <- function(x) {
  env <- sys.parent()
  digits <- evalq(digits, envir=env)
@@ -1250,6 +1068,9 @@ formatC(x$loglik[2],format="f",digits=digits),
  return(model.info)
 }
 
+##' @rdname modelInfo
+##' @aliases modelInfo.summary.coxph
+##' @export
 "modelInfo.summary.coxph" <- function (x) {
        env <- sys.parent()
        digits <- evalq(digits, envir=env)
@@ -1376,6 +1197,9 @@ apsrtableSummary.lrm <- function (x) {
   invisible(res)
 }
 
+##' @rdname modelInfo
+##' @aliases modelInfo.summary.lrm
+##' @export
 "modelInfo.summary.lrm" <- function(x) {
   env <- sys.parent()
   digits<- evalq(digits, envir=env)
@@ -1403,68 +1227,6 @@ apsrtableSummary.lrm <- function (x) {
   invisible(model.info) 
 }
 
-## "apsrtableSummary.mer" <- function(object) {
-##   call <- object@call
-##   digits <- 2
-##   detail <- TRUE
-##   ##print (call)
-##                                         #object <- summary(object)
-##                                         #summ <- summary(object)
-##   fcoef <- fixef(object)
-##                                         #coefs <- attr(summ, "coefs")
-##                                         #useScale <- attr (VarCorr (object), "sc")
-##   useScale <- object@dims["useSc"]
-##   corF <- vcov(object)@factors$correlation
-##   coefs <- cbind(fcoef, corF@sd)
-##   if (length (fcoef) > 0){
-##     if (!object@dims["useSc"]) {
-##       coefs <- coefs[, 1:2, drop = FALSE]
-##       stat <- coefs[, 1]/coefs[, 2]
-##       pval <- 2 * pnorm(abs(stat), lower = FALSE)
-##       coefs <- cbind(coefs, `z value` = stat, `Pr(>|z|)` = pval)
-##     }
-##     else {
-##       stat <- coefs[, 1]/coefs[, 2]
-##       coefs <- cbind(coefs, `t value` = stat)
-##     }
-##     dimnames(coefs)[[2]][1:2] <- c("coef.est", "coef.se")
-##     if(detail){
-##       pfround (coefs, digits)
-##     }
-##     else{
-##       pfround(coefs[,1:2], digits)
-##     }
-##   }
-##   ##cat("\nError terms:\n")
-##   vc <- as.matrix.VarCorr (VarCorr (object), useScale=useScale, digits)
-##   ##print (vc[,c(1:2,4:ncol(vc))], quote=FALSE)
-##   ngrps <- lapply(object@flist, function(x) length(levels(x)))
-##   REML <- object@dims["REML"]
-##   llik <- logLik(object, REML)
-##   AIC <- AIC(llik)
-##   dev <- object@deviance["ML"]     # Dbar
-##   n <- object@dims["n"]
-##   Dhat <- -2*(llik) # Dhat
-##   pD <- dev - Dhat              # pD
-##   DIC <- dev + pD               # DIC=Dbar+pD=Dhat+2pD
-##   ##cat("---\n")
-##   ##cat(sprintf("number of obs: %d, groups: ", n))
-##   ##cat(paste(paste(names(ngrps), ngrps, sep = ", "), collapse = "; "))
-##   ##cat(sprintf("\nAIC = %g, DIC = ", round(AIC,1)))
-##   ##cat(round(DIC, 1))
-##   ##cat("\ndeviance =", fround (dev, 1), "\n")
-##   if (useScale < 0){
-##     overdisp <- paste("overdispersion parameter =", fround (.Call("mer_sigma", object, FALSE, PACKAGE = "lme4"), 1), "\n")
-##   }
-## }
-## setGeneric("apsrtableSummary", def=function(object){standardGeneric("apsrtableSummary")})
-## setMethod("apsrtableSummary", "mer", apsrtableSummary.mer)
-
-
-## tobit requested by Antonio Ramos added by mjm 2009-02-25
-## gee requested by Dustin Tingley started by mjm 2009-04-24
-## coxph provided by David Hugh-Jones 2009-11-20 added mjm 2009-12-08
-
 setGeneric("modelInfo", def=function(x){standardGeneric("modelInfo")})
 setOldClass("summary.lm")
 setOldClass("summary.glm")
@@ -1475,12 +1237,13 @@ setOldClass("summary.negbin")
 setOldClass("summary.lrm")
 
 setMethod("modelInfo", "summary.lm", modelInfo.summary.lm )
+setMethod("modelInfo", "summary.lm", modelInfo.summary.reg )
 setMethod("modelInfo","summary.glm", modelInfo.summary.glm )
 setMethod("modelInfo","summary.tobit", modelInfo.summary.tobit)
 setMethod("modelInfo","summary.gee",modelInfo.summary.gee)
 setMethod("modelInfo","summary.coxph",modelInfo.summary.coxph)
 setMethod("modelInfo","summary.negbin",modelInfo.summary.glm)
-setMethod("modelInfo", "summary.lrm", modelInfo.summary.lrm )
+setMethod("modelInfo", "summary.lrm", modelInfo.summary.lrm)
 
 "coef.model.info" <- function(object,...) {
   x <- as.matrix(unlist(object)); invisible(x)

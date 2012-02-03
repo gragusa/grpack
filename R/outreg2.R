@@ -1237,7 +1237,7 @@ setOldClass("summary.negbin")
 setOldClass("summary.lrm")
 
 setMethod("modelInfo", "summary.lm", modelInfo.summary.lm )
-setMethod("modelInfo", "summary.lm", modelInfo.summary.reg )
+setMethod("modelInfo", "summary.reg", modelInfo.summary.reg )
 setMethod("modelInfo","summary.glm", modelInfo.summary.glm )
 setMethod("modelInfo","summary.tobit", modelInfo.summary.tobit)
 setMethod("modelInfo","summary.gee",modelInfo.summary.gee)

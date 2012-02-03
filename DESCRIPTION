@@ -9,7 +9,8 @@ Depends:
     Rcpp (>= 0.9.9),
     RcppArmadillo (>= 0.2.34),
     sandwich,
-    lmtest
+    lmtest,
+    Hmisc
 LinkingTo: Rcpp, RcppArmadillo
 Description: More about what it does (maybe more than one line)
 License: GPL (version 2 or later)

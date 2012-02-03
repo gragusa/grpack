@@ -17,7 +17,7 @@
 ##' @name grpack-package
 ##' @docType package
 ##' @title grpack
-##' @import sandwich Rcpp RcppArmadillo
+##' @import sandwich Rcpp RcppArmadillo Hmisc
 ##' @keywords package
 ##' @useDynLib grpack
 NULL

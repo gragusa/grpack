@@ -374,11 +374,6 @@ stripzero <- function(string)
     return(string)
 }
 
-
-
-
-
-
 regformat  <- function(x, len, strip.zero, width,...) {
   ## Stata Default for coef
   ##     len <- c(8,7,4,4,7,7)
@@ -414,3 +409,7 @@ regformat  <- function(x, len, strip.zero, width,...) {
   ##matrix(format.df(as.numeric(xout), numeric=F), ncol=nc, nrow=nr)
   xout
 }
+
+
+
+

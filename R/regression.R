@@ -555,10 +555,6 @@ confint.reg <- function (object, parm, level = 0.95,
     ci
 }
 
-
-
-
-
 ## geboot.reg <- function(object, sim = 999, wbweights = c('radamacher', 'exp', 'mn1','mn2'), ...)
 ## {
 ##     type <- match.arg(wbweights)

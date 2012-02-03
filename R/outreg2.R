@@ -214,7 +214,7 @@ mylatex <- function (object, title = first.word(deparse(substitute(object))),
                                                   paste("cap={", caption.lot, "},", sep = ""), paste("label=", 
                                                                                                      label, ",", sep = ""), if (!landscape) 
                                                                                                        paste("pos=", where, ",", sep = ""), if (landscape) 
-                                                                                                         "rotate", paste("]{", tabular.cols, "}", sep = ""), 
+                                                                                                         "sideways", paste("]{", tabular.cols, "}", sep = ""), 
                          if (length(insert.bottom)) 
                            paste("{", paste(sl, "tnote[]{", sedit(insert.bottom, 
                                                                   "\\\\", " "), "}", sep = "", collapse = ""), 

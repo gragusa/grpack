@@ -599,7 +599,7 @@ outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"),
                    cgroup.just=rep("c",length(n.cgroup)),
                    colheads=NULL,
                    extracolheads=NULL, extracolsize='scriptsize',
-                   dcolumn=FALSE, numeric.dollar=!dcolumn, cdot=FALSE,
+                   dcolumn=TRUE, tight=TRUE, numeric.dollar=!dcolumn, cdot=FALSE,
                    longtable=FALSE, draft.longtable=TRUE, ctable=FALSE, booktabs=FALSE,
                    table.env=FALSE, here=FALSE, lines.page=40,
                    caption=NULL, caption.lot=NULL, caption.loc=c('top','bottom'),
@@ -622,6 +622,10 @@ outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"),
                            stars=stars,lev=lev)
   
   table <- beautify.out.matrix(coef.table)
+  if(tight & dcolumn){
+    old.col.just <- attr(table$out.matrix, 'col.just')
+    attr(table$out.matrix, 'col.just') <- sub("-1", "1", old.col.just)
+  }
   x1 <- table$out.matrix
   outrows <- nrow(x1)
   x1 <- rbind( rbind(x1[-c((outrows-1):outrows),], ""), x1[c((outrows-1):outrows),])
@@ -629,11 +633,11 @@ outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"),
   x3 <- additional.rows
   if(is.null(x3)){
     final.table <- rbind(rbind(rbind(rbind(x1, " "), x2[,-1]), " "), x3)
-    rownames(final.table) <- c(rownames(x1), "", x2[,1], "")
+    rownames(final.table) <- c(rownames(x1), "", x2[,1], "") ## no need
   }      
   else{
     final.table <- rbind(rbind(rbind(rbind(x1, " "), x2[,-1]), " "), x3)
-    rownames(final.table) <- c(rownames(x1), "", x2[,1], rownames(x3))
+    rownames(final.table) <- c(rownames(x1), "", x2[,1], "", rownames(x3))
   }
   attr(final.table, 'col.just') <- attr(table$out.matrix, 'col.just')
   nc <- ncol(final.table)
@@ -676,7 +680,7 @@ outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"),
           na.blank=TRUE,
           insert.bottom=insert.bottom, 
           first.hline.double=first.hline.double,
-          where=wher, 
+          where=where, 
           size=size,
           center=center,
           landscape=landscape,

@@ -623,7 +623,7 @@ outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"),
   
   table <- beautify.out.matrix(coef.table)
   x1 <- table$out.matrix
-  outrows <- nrows(x1)
+  outrows <- nrow(x1)
   x1 <- rbind( rbind(x1[-c((outrows-1):outrows),], ""), x1[c((outrows-1):outrows),])
   x2 <- table$out.info
   x3 <- additional.rows

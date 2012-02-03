@@ -623,6 +623,7 @@ outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"),
   
   table <- beautify.out.matrix(coef.table)
   x1 <- table$out.matrix
+  outrows <- nrows(x1)
   x1 <- rbind( rbind(x1[-c((outrows-1):outrows),], ""), x1[c((outrows-1):outrows),])
   x2 <- table$out.info
   x3 <- additional.rows
@@ -1228,13 +1229,29 @@ apsrtableSummary.lrm <- function (x) {
 }
 
 setGeneric("modelInfo", def=function(x){standardGeneric("modelInfo")})
+
 setOldClass("summary.lm")
+
 setOldClass("summary.glm")
 setOldClass("summary.tobit")
 setOldClass("summary.gee")
 setOldClass("summary.coxph")
 setOldClass("summary.negbin")
+#' "summary.lrm" class
+#'
+#' @name summary.lrm
+#' @family summary.lrm
+#'
+#' @exportClass summary.lrm
 setOldClass("summary.lrm")
+#' "summary.lrm" class
+#'
+#' @name summary.reg
+#' @family summary.reg
+#'
+#' @exportClass summary.reg
+setOldClass("summary.reg")
+
 
 setMethod("modelInfo", "summary.lm", modelInfo.summary.lm )
 setMethod("modelInfo", "summary.reg", modelInfo.summary.reg )

@@ -581,7 +581,7 @@ beautify.out.matrix <- function(z, dec = 2){
 ##' @export
 outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"), 
                    omitcoef=NULL, omit.model=NULL,
-                   coef.names=NULL,                       
+                   coef.names=NULL, cons.below=TRUE,                       
                    stars='stata',lev=.05,
                    additional.rows=NULL,
                    title=first.word(deparse(substitute(object))),
@@ -628,7 +628,11 @@ outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"),
   }
   x1 <- table$out.matrix
   outrows <- nrow(x1)
-  x1 <- rbind( rbind(x1[-c((outrows-1):outrows),], ""), x1[c((outrows-1):outrows),])
+  match("Constant", rownames(x1))
+  if(cons.below & any(!is.na(match(c("Constant","(Intercept)"), rownames(x1))))){
+    x1 <- rbind(x1, "", x1[1:2,])[-c(1,2),]  
+  }
+  
   x2 <- table$out.info
   x3 <- additional.rows
   if(is.null(x3)){

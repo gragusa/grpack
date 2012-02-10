@@ -1,9 +1,10 @@
 mylatex <- function (object, title = first.word(deparse(substitute(object))), 
                      file = paste(title, ".tex", sep = ""), append = FALSE, label = title, 
                      rowlabel = title, rowlabel.just = "l", cgroup = NULL, n.cgroup = NULL, 
-                     rgroup = NULL, n.rgroup = NULL, cgroupTexCmd = "bfseries", 
-                     rgroupTexCmd = "bfseries", rownamesTexCmd = NULL, colnamesTexCmd = NULL, 
-                     cellTexCmds = NULL, rowname, cgroup.just = rep("c", length(n.cgroup)), 
+                     rgroup = NULL, n.rgroup = NULL, 
+                     cgroupTexCmd = NULL, 
+                     rgroupTexCmd = NULL, rownamesTexCmd = NULL, colnamesTexCmd = NULL, 
+                     cellTexCmds = NULL, rowname, cgroup.just = rep("c", sum(n.cgroup)), 
                      colheads = NULL, extracolheads = NULL, extracolsize = "scriptsize", 
                      dcolumn = FALSE, numeric.dollar = !dcolumn, cdot = FALSE, 
                      longtable = FALSE, draft.longtable = TRUE, ctable = FALSE, 
@@ -11,6 +12,7 @@ mylatex <- function (object, title = first.word(deparse(substitute(object))),
                      caption = NULL, caption.lot = NULL, caption.loc = c("top","bottom"), 
                      double.slash = FALSE, vbar = FALSE, collabel.just = rep("c", nc),                                                                                                                                        
                      na.blank = TRUE, insert.bottom = NULL, 
+                     do.begin=TRUE, do.end=TRUE,
                      first.hline.double = !(booktabs | ctable), 
                      where = "!tbp", size = NULL, 
                      center = c("center", "centering", "none"), landscape = FALSE, multicol = TRUE, 
@@ -180,10 +182,12 @@ mylatex <- function (object, title = first.word(deparse(substitute(object))),
   cat("%", deparse(sys.call()), "\n%\n", file = file, append = file != 
     "")
   if (dcolumn) {
-    decimal.point <- ifelse(cdot, paste(sl, "cdot", sep = ""), 
-                            ".")
-    cat(sl, "newcolumntype{.}{D{.}{", decimal.point, "}{-1}}\n", 
-        sep = "", file = file, append = file != "")
+    if(do.begin){
+      decimal.point <- ifelse(cdot, paste(sl, "cdot", sep = ""), 
+                              ".")
+      cat(sl, "newcolumntype{.}{D{.}{", decimal.point, "}{-1}}\n", 
+          sep = "", file = file, append = file != "")
+    }
   }
 {
   tabular.cols <- paste(vbar, col.just, sep = "")
@@ -266,13 +270,16 @@ mylatex <- function (object, title = first.word(deparse(substitute(object))),
                                    "}\n", if (landscape) 
                                      paste(sl, "end{landscape}\n", sep = ""), sep = "")
   }
-  cat(latex.begin, file = file, append = file != "")
+  if(do.begin){
+    cat(latex.begin, file = file, append = file != "")  
+  }
+  
   if (length(cgroup)) {
     cvbar <- paste(cgroup.just, vbar, sep = "")
     cvbar[1] <- paste(vbar, cvbar[1], sep = "")
     cvbar[-length(cvbar)] <- paste(cvbar[-length(cvbar)], 
                                    vbar, sep = "")
-    slmc <- paste(sl, "multicolumn{", sep = "")
+    slmc <- paste(sl, "multicolumn{", sep = "")    
     if (!is.null(cgroupTexCmd)) 
       labs <- paste(sl, cgroupTexCmd, " ", cgroup, sep = "")
     if (multicol) 
@@ -434,8 +441,10 @@ mylatex <- function (object, title = first.word(deparse(substitute(object))),
       "")
   }
 }
-  cat(latex.end, file = file, sep = "\n", append = file != 
-    "")
+  if(do.end){
+    cat(latex.end, file = file, sep = "\n", append = file != "")  
+  }
+  
   sty <- c("longtable"[longtable], "here"[here], "dcolumn"[dcolumn], 
            "ctable"[ctable], "booktabs"[booktabs], if (landscape && 
              !ctable) "lscape")
@@ -479,6 +488,8 @@ beautify.out.matrix <- function(z, dec = 2){
 ##' \code{Hmisc} package. 
 ##' @title Arrange regression outputs into an illustrative table
 ##' @param ... the statistical models.
+##' @param model.list the statistical models as a list. If model list is
+##' missing, then the models are assumed to be passed by \code{...}. 
 ##' @param model.names Optional vector of names to use as column
 ##' headings in the table. If more models than names are supplied,
 ##' unnamed models are numbered (starting at one more than the number
@@ -504,6 +515,7 @@ beautify.out.matrix <- function(z, dec = 2){
 ##' names are taken from the variables in the models and “sanitized”
 ##' for latex. If \code{coef.names} are supplied, they must be valid
 ##' latex, with double-backslash escape characters. 
+##' @param cons.below 
 ##' @param stars how statistical significance “stars”, either "stata",
 ##' "default", or 1. "stata" is based on the stata default and gives
 ##' three stars.  "default" uses the \code{R} default,  not to be
@@ -550,6 +562,7 @@ beautify.out.matrix <- function(z, dec = 2){
 ##' @param extracolheads 
 ##' @param extracolsize 
 ##' @param dcolumn 
+##' @param tight 
 ##' @param numeric.dollar 
 ##' @param cdot 
 ##' @param longtable 
@@ -567,6 +580,8 @@ beautify.out.matrix <- function(z, dec = 2){
 ##' @param collabel.just 
 ##' @param na.blank 
 ##' @param insert.bottom 
+##' @param do.begin Should the latex code at the beginning of table be printed? (Default: TRUE)
+##' @param do.end Should the latex code at the end of table be printed? (Default: TRUE)
 ##' @param first.hline.double 
 ##' @param where 
 ##' @param size 
@@ -575,11 +590,13 @@ beautify.out.matrix <- function(z, dec = 2){
 ##' @param multicol 
 ##' @param math.row.names 
 ##' @param math.col.names 
-##' @param rowcolors 
+##' @param rowcolors This command is useful for inserting color command. For
+##' instance, if \code{rowcolors=rowcolors{1}{green}{pink}}, then the rows are 
+##' subsequently coloured in green and in pink. 
 ##' @return A character vector containing the LaTeX table.
 ##' @author Giuseppe Ragusa
 ##' @export
-outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"), 
+outreg2 <- function(..., model.list, model.names=NULL, order=c("lr","rl","longest"), 
                    omitcoef=NULL, omit.model=NULL,
                    coef.names=NULL, cons.below=TRUE,                       
                    stars='stata',lev=.05,
@@ -590,13 +607,13 @@ outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"),
                    rowlabel="", rowlabel.just="l",
                    cgroup=NULL, n.cgroup=NULL,
                    rgroup=NULL, n.rgroup=NULL,
-                   cgroupTexCmd="sc",
-                   rgroupTexCmd="sc",
+                   cgroupTexCmd=NULL,
+                   rgroupTexCmd=NULL,
                    rownamesTexCmd=NULL,
                    colnamesTexCmd=NULL,
                    cellTexCmds=NULL,
                    rowname, 
-                   cgroup.just=rep("c",length(n.cgroup)),
+                   cgroup.just=rep("c",sum(n.cgroup)),
                    colheads=NULL,
                    extracolheads=NULL, extracolsize='scriptsize',
                    dcolumn=TRUE, tight=TRUE, numeric.dollar=!dcolumn, cdot=FALSE,
@@ -605,7 +622,8 @@ outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"),
                    caption=NULL, caption.lot=NULL, caption.loc=c('top','bottom'),
                    double.slash=FALSE,
                    vbar=FALSE, collabel.just=rep("c",nc), na.blank=TRUE,
-                   insert.bottom=NULL, first.hline.double=!(booktabs | ctable),
+                   insert.bottom=NULL, do.begin=TRUE, do.end=TRUE,
+                   first.hline.double=!(booktabs | ctable),
                    where='!tbp', size=NULL,
                    center=c('center','centering','none'),
                    landscape=FALSE,
@@ -613,7 +631,11 @@ outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"),
                    math.row.names=TRUE, math.col.names=FALSE, rowcolors=NULL)
 {
   ## Step 1. Send everything to apsrtable2
-  ml <- list(...)
+  if(missing(model.list))
+    ml <- list(...)
+  else     
+    ml <- model.list
+  
   coef.table <- apsrtable2(ml, model.names=model.names, 
                            order=order, 
                            omitcoef=omitcoef, 
@@ -628,10 +650,13 @@ outreg2 <- function(..., model.names=NULL, order=c("lr","rl","longest"),
   }
   x1 <- table$out.matrix
   outrows <- nrow(x1)
-  match("Constant", rownames(x1))
-  if(cons.below & any(!is.na(match(c("Constant","(Intercept)"), rownames(x1))))){
-    x1 <- rbind(x1, "", x1[1:2,])[-c(1,2),]  
-  }
+
+  ## FIXME: should cons.belo be passed to apsrtable2? Probably not. For now
+  ##        cons.below is disable. The intercept goes at the end.
+  ## match("Constant", rownames(x1))
+  ## if(cons.below & any(!is.na(match(c("Constant","(Intercept)"), rownames(x1))))){
+  ##   x1 <- rbind(x1, "", x1[1:2,])[-c(1,2),]  
+  ## }
   
   x2 <- table$out.info
   x3 <- additional.rows
@@ -851,9 +876,11 @@ apsrtable2 <- function (modelList, model.names=NULL, order=c("lr","rl","longest"
   star.out <- matrix(unlist(star.out), (outrows/2), nmodels)
   
   if(rownames(out.matrix)[1]=="(Intercept)"){
-    rownames(out.matrix)[1] <- "Constant"    
-    out.matrix <- out.matrix[c(3:outrows,1:2),]
-    star.out <- star.out[c(2:(outrows/2),1),]    
+    if(outrows>2) {
+      rownames(out.matrix)[1] <- "Constant"    
+      out.matrix <- out.matrix[c(3:outrows,1:2),]
+      star.out <- star.out[c(2:(outrows/2),1),]
+    }
   }
   
   star.out[is.na(star.out)] <- ""

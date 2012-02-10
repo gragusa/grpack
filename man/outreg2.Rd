@@ -2,20 +2,21 @@
 \alias{outreg2}
 \title{Arrange regression outputs into an illustrative table}
 \usage{
-  outreg2(..., model.names = NULL,
+  outreg2(..., model.list, model.names = NULL,
     order = c("lr", "rl", "longest"), omitcoef = NULL,
-    omit.model = NULL, coef.names = NULL, stars = "stata",
-    lev = 0.05, additional.rows = NULL,
+    omit.model = NULL, coef.names = NULL,
+    cons.below = TRUE, stars = "stata", lev = 0.05,
+    additional.rows = NULL,
     title = first.word(deparse(substitute(object))),
     file = "", append = FALSE, label = title,
-    rowlabel = title, rowlabel.just = "l", cgroup = NULL,
+    rowlabel = "", rowlabel.just = "l", cgroup = NULL,
     n.cgroup = NULL, rgroup = NULL, n.rgroup = NULL,
-    cgroupTexCmd = "sc", rgroupTexCmd = "sc",
+    cgroupTexCmd = NULL, rgroupTexCmd = NULL,
     rownamesTexCmd = NULL, colnamesTexCmd = NULL,
     cellTexCmds = NULL, rowname,
-    cgroup.just = rep("c", length(n.cgroup)),
-    colheads = NULL, extracolheads = NULL,
-    extracolsize = "scriptsize", dcolumn = FALSE,
+    cgroup.just = rep("c", sum(n.cgroup)), colheads = NULL,
+    extracolheads = NULL, extracolsize = "scriptsize",
+    dcolumn = TRUE, tight = TRUE,
     numeric.dollar = !dcolumn, cdot = FALSE,
     longtable = FALSE, draft.longtable = TRUE,
     ctable = FALSE, booktabs = FALSE, table.env = FALSE,
@@ -23,7 +24,7 @@
     caption.lot = NULL, caption.loc = c("top", "bottom"),
     double.slash = FALSE, vbar = FALSE,
     collabel.just = rep("c", nc), na.blank = TRUE,
-    insert.bottom = NULL,
+    insert.bottom = NULL, do.begin = TRUE, do.end = TRUE,
     first.hline.double = !(booktabs | ctable),
     where = "!tbp", size = NULL,
     center = c("center", "centering", "none"),
@@ -33,6 +34,10 @@
 }
 \arguments{
   \item{...}{the statistical models.}
+
+  \item{model.list}{the statistical models as a list. If
+  model list is missing, then the models are assumed to be
+  passed by \code{...}.}
 
   \item{model.names}{Optional vector of names to use as
   column headings in the table. If more models than names
@@ -67,6 +72,8 @@
   “sanitized” for latex. If \code{coef.names} are supplied,
   they must be valid latex, with double-backslash escape
   characters.}
+
+  \item{cons.below}{}
 
   \item{stars}{how statistical significance “stars”, either
   "stata", "default", or 1. "stata" is based on the stata
@@ -143,6 +150,8 @@
 
   \item{dcolumn}{}
 
+  \item{tight}{}
+
   \item{numeric.dollar}{}
 
   \item{cdot}{}
@@ -177,6 +186,12 @@
 
   \item{insert.bottom}{}
 
+  \item{do.begin}{Should the latex code at the beginning of
+  table be printed? (Default: TRUE)}
+
+  \item{do.end}{Should the latex code at the end of table
+  be printed? (Default: TRUE)}
+
   \item{first.hline.double}{}
 
   \item{where}{}
@@ -193,7 +208,10 @@
 
   \item{math.col.names}{}
 
-  \item{rowcolors}{}
+  \item{rowcolors}{This command is useful for inserting
+  color command. For instance, if
+  \code{rowcolors=rowcolors{1}{green}{pink}}, then the rows
+  are subsequently coloured in green and in pink.}
 }
 \value{
   A character vector containing the LaTeX table.

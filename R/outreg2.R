@@ -4,7 +4,7 @@ mylatex <- function (object, title = first.word(deparse(substitute(object))),
                      rgroup = NULL, n.rgroup = NULL, 
                      cgroupTexCmd = NULL, 
                      rgroupTexCmd = NULL, rownamesTexCmd = NULL, colnamesTexCmd = NULL, 
-                     cellTexCmds = NULL, rowname, cgroup.just = rep("c", sum(n.cgroup)), 
+                     cellTexCmds = NULL, rowname, cgroup.just = rep("c", sum(n.cgroup)-1), 
                      colheads = NULL, extracolheads = NULL, extracolsize = "scriptsize", 
                      dcolumn = FALSE, numeric.dollar = !dcolumn, cdot = FALSE, 
                      longtable = FALSE, draft.longtable = TRUE, ctable = FALSE, 
@@ -282,7 +282,9 @@ mylatex <- function (object, title = first.word(deparse(substitute(object))),
     slmc <- paste(sl, "multicolumn{", sep = "")    
     if (!is.null(cgroupTexCmd)) 
       labs <- paste(sl, cgroupTexCmd, " ", cgroup, sep = "")
-    if (multicol) 
+    else
+      labs <- paste(" ", cgroup, sep = "")
+    if (multicol)       
       labs <- paste(slmc, n.cgroup, "}{", cvbar, "}{", 
                     labs, "}", sep = "")
     cat(labs, file = file, sep = "&\n", append = file != 

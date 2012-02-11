@@ -620,7 +620,7 @@ outreg2 <- function(..., model.list, model.names=NULL, order=c("lr","rl","longes
                    extracolheads=NULL, extracolsize='scriptsize',
                    dcolumn=TRUE, tight=TRUE, numeric.dollar=!dcolumn, cdot=FALSE,
                    longtable=FALSE, draft.longtable=TRUE, ctable=FALSE, booktabs=FALSE,
-                   table.env=FALSE, here=FALSE, lines.page=40,
+                   table.env=TRUE, here=FALSE, lines.page=40,
                    caption=NULL, caption.lot=NULL, caption.loc=c('top','bottom'),
                    double.slash=FALSE,
                    vbar=FALSE, collabel.just=rep("c",nc), na.blank=TRUE,

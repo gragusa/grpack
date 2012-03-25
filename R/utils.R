@@ -1,7 +1,7 @@
 ##################################################################
 ## utils.R /
 ## Author: Giuseppe Ragusa 
-## Time-stamp: "2012-01-19 19:51:55 gragusa" 
+## Time-stamp: "2012-03-25 17:05:51 gragusa" 
 ##
 ## Description: Utils function for grpack
 ##################################################################
@@ -85,19 +85,17 @@ rndCGM2 <- function( sdalpha = 1, k = 5, nclusters = 5, nsubjects = 50,
 }
 
 
-trim <- function(x, q = 0.01)
-{
-    qq <- quantile(x, p=c(q, 1-q))
-    x[x>qq[1] & x<qq[2]]
+trim <- function(x, q = 0.01) {
+  qq <- quantile(x, p=c(q, 1-q))
+  x[x>qq[1] & x<qq[2]]
 }
 
-capply <- function(str, ff) {
-
-    sapply(lapply(strsplit(str, NULL), ff), paste, collapse="") }
+capply <- function(str, ff) 
+  sapply(lapply(strsplit(str, NULL), ff), paste, collapse="") 
 
 cap <- function(char) {
-   # change lower letters to upper, others leave unchanged
-    if (any(ind <- letters==char)) LETTERS[ind]    else char 
+  ## change lower letters to upper, others leave unchanged
+  if (any(ind <- letters==char)) LETTERS[ind]    else char 
 }
 
 capitalize <- function(str) { # vector of words

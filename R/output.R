@@ -44,7 +44,8 @@ statify <- function(x,
     info <- regformat(info, len = c(4, 5, 5, 5, 6), strip.zero=rep(FALSE, 5),
                       width=rep(7,5))
     ind <- which(as.numeric(info)>10^5)
-    info[1,ind] <- paste(format.df(as.numeric(info[1,ind])/10^6, numeric=FALSE, dec=1), 'e+06', sep='')
+    if(length(ind))
+      info[1,ind] <- paste(format.df(as.numeric(info[1,ind])/10^6, numeric=FALSE, dec=1), 'e+06', sep='')
     
     rank <- formatC((x$rank-1), 'd', width = 3, digits = 0, flag = "# ")
     dfr  <- format(ceiling(x$df+x$rank), scientific=(1-scipen))
@@ -63,7 +64,7 @@ statify <- function(x,
   cat('------------------------------------------------------------------------------\n')
   if(type!="const")
     cat('                              Robust\n')
-  cat('     ',y,' |      Coef.    Std. Err.     t    P>|t|     [95% Conf. Interval]\n', sep = '')
+  cat('   ',y,' |      Coef.    Std. Err.     t    P>|t|     [95% Conf. Interval]\n', sep = '')
   cat('------------------------------------------------------------------------------\n')
   for(j in 1:length(coef(x)))
     ##cat(vn[j],' |', cf[j,1],' ',cf[j,2],' ', cf[j,3],'  ',cf[j,4],'   ',cf[j,5],'  ',cf[j,6],'\n', sep ='')
@@ -343,8 +344,8 @@ printMatCoef <-
         }
 	if(any(okP <- ok[,nc])) {
 	pv <- as.vector(xm[, nc]) # drop names
-	    Cf[okP, nc] <- format.pval(pv[okP],
-                                       digits = dig.tst, eps = eps.Pvalue)
+	    Cf[okP, nc] <- base::format.pval(pv[okP],
+                                      digits = dig.tst, eps = eps.Pvalue)
 	    signif.stars <- signif.stars && any(pv[okP] < .1)
 	    if(signif.stars) {
 		Signif <- symnum(pv, corr = FALSE, na = FALSE,
@@ -378,7 +379,6 @@ regformat  <- function(x, len, strip.zero, width,...) {
   ## Stata Default for coef
   ##     len <- c(8,7,4,4,7,7)
   ##     strip.zero <- c(TRUE, TRUE, FALSE, FALSE, TRUE, TRUE)
-
   nr  <- nrow(x)
   nc  <- ncol(x)  
   xout <- matrix('', ncol=nc, nrow=nr)

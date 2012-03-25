@@ -7,6 +7,9 @@
 ##' @param do.begin Should the latex code at the beginning of table be printed?
 ##' @param do.end Should the latex code at the end of table be printed?
 ##' @param tight when using dcolumn tighten columns width.
+##' @param rowcolors This command is useful for inserting color command. For
+##' instance, if \code{rowcolors=rowcolors{1}{green}{pink}}, then the rows are 
+##' subsequently coloured in green and in pink. 
 ##' @return See \code{\link{latex}} of package \cod{Hmisc}.
 ##' @author Giuseppe Ragusa
 ##' @export
@@ -24,7 +27,7 @@ latex2 <-
            rownamesTexCmd=NULL, 
            colnamesTexCmd=NULL,
            cellTexCmds=NULL,
-           rowname, cgroup.just=rep("c",length(n.cgroup)),
+           rowname, cgroup.just=rep("c",sum(n.cgroup)),
            colheads=NULL,
            extracolheads=NULL, extracolsize='scriptsize',
            dcolumn=FALSE, tight=FALSE, numeric.dollar=!dcolumn, cdot=FALSE,
@@ -38,7 +41,7 @@ latex2 <-
            center=c('center','centering','none'),
            landscape=FALSE,
            multicol=TRUE, ## to remove multicolumn if no need  SSJ 17nov03
-           math.row.names=FALSE, math.col.names=FALSE,
+           math.row.names=FALSE, math.col.names=FALSE, rowcolors=NULL,
            ...)      ## center MJ 08sep03
 {
   center <- match.arg(center)
@@ -328,10 +331,8 @@ latex2 <-
                      '}', sep='')
     
   } else if(!longtable) {
-    latex.begin <- paste(if(landscape)
-                       paste(sl, "begin{landscape}",sep=""),
-                     if(table.env)
-                       paste(sl, "begin{table}",
+    latex.begin <- paste(if(table.env)
+                         paste(sl, if (landscape) "begin{sidewaystable}" else "begin{table}",
                              if(here)
                                "[H]"
                              else
@@ -360,9 +361,7 @@ latex2 <-
                    if(length(insert.bottom))
                      paste(insert.bottom, collapse='\\\\'),
                    if(table.env)
-                     paste(sl, "end{table}\n", sep=""),
-                   if(landscape)
-                     paste(sl, "end{landscape}\n", sep=""),
+                     paste(sl, if(landscape) "end{sidewaystable)" else "end{table}\n", sep=""),
                    sep='')
   } else {
     latex.begin <- paste(paste(if (!draft.longtable)

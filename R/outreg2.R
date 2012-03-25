@@ -10,8 +10,7 @@ mylatex <- function (object, title = first.word(deparse(substitute(object))),
                      longtable = FALSE, draft.longtable = TRUE, ctable = FALSE, 
                      booktabs = FALSE, table.env = TRUE, here = FALSE, lines.page = 40, 
                      caption = NULL, caption.lot = NULL, caption.loc = c("top","bottom"), 
-                     double.slash = FALSE, vbar = FALSE, collabel.just = rep("c", nc),                                                                                                                                        
-                     na.blank = TRUE, insert.bottom = NULL, 
+                     double.slash = FALSE, vbar = FALSE, collabel.just = rep("c", nc),                                    na.blank = TRUE, insert.bottom = NULL, 
                      do.begin=TRUE, do.end=TRUE,
                      first.hline.double = !(booktabs | ctable), 
                      where = "!tbp", size = NULL, 
@@ -228,9 +227,8 @@ mylatex <- function (object, title = first.word(deparse(substitute(object))),
       "}", sep = "")
   }
   else if (!longtable) {
-    latex.begin <- paste(if (landscape) 
-      paste(sl, "begin{landscape}", sep = ""), if (table.env) 
-        paste(sl, "begin{table}", if (here) 
+    latex.begin <- paste(if (table.env) 
+        paste(sl, if (landscape) "begin{sidewaystable}" else "begin{table}", if (here) 
           "[H]"
               else paste("[", where, "]", sep = ""), "\n", sep = ""), 
                          if (length(size)) 
@@ -250,8 +248,7 @@ mylatex <- function (object, title = first.word(deparse(substitute(object))),
                            "bottom" && !missing(caption)) 
                            paste(caption, "\n"), if (length(insert.bottom)) 
                              paste(insert.bottom, collapse = "\\\\"), if (table.env) 
-                               paste(sl, "end{table}\n", sep = ""), if (landscape) 
-                                 paste(sl, "end{landscape}\n", sep = ""), sep = "")
+                               paste(sl, if(landscape) "end{sidewaystable}\n" else "end{table}", sep = ""),  sep = "")
   }
   else {
     latex.begin <- paste(paste(if (!draft.longtable) 
@@ -621,7 +618,7 @@ outreg2 <- function(..., model.list, model.names=NULL, order=c("lr","rl","longes
                    dcolumn=TRUE, tight=TRUE, numeric.dollar=!dcolumn, cdot=FALSE,
                    longtable=FALSE, draft.longtable=TRUE, ctable=FALSE, booktabs=FALSE,
                    table.env=TRUE, here=FALSE, lines.page=40,
-                   caption=NULL, caption.lot=NULL, caption.loc=c('bottom','top'),
+                   caption=NULL, caption.lot=NULL, caption.loc='bottom',
                    double.slash=FALSE,
                    vbar=FALSE, collabel.just=rep("c",nc), na.blank=TRUE,
                    insert.bottom=NULL, do.begin=TRUE, do.end=TRUE,
@@ -976,7 +973,7 @@ apsrStars <- function (x, digits = max(3, getOption("digits") - 2),
         
         if (any(okP <- ok[, nc])) {
           pv <- as.vector(xm[, nc])
-          Cf[okP, nc] <- format.pval(pv[okP], digits = dig.tst, 
+          Cf[okP, nc] <- base::format.pval(pv[okP], digits = dig.tst, 
                                      eps = eps.Pvalue)
           signif.stars <- signif.stars && any(pv[okP] < 0.1)
           Signif <- ""
@@ -1007,7 +1004,7 @@ apsrStars <- function (x, digits = max(3, getOption("digits") - 2),
 
 #'  summary methods used by \code{"outreg2"}. 
 #'
-#' @x ... a model passed to \code{outreg2}.
+#' @param ... a model passed to \code{outreg2}.
 #'
 #' @return A \code{model.info} object. 
 #' 

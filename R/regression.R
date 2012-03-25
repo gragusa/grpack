@@ -134,6 +134,7 @@ reg <- function(formula, data, subset, weights, na.action,
 }
 
 ##' @S3method summary reg
+##' @export
 summary.reg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"),
                          correlation = FALSE, symbolic.cor = FALSE,
                          ...)
@@ -334,6 +335,7 @@ print.summary.reg <-
 }
 
 ##' @S3method vcov reg
+##' @export
 vcov.reg <- function (object,
                       type = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"),
                       ...) {
@@ -487,6 +489,7 @@ coeftestdefault <- function (x, vcov. = NULL, df = NULL, ...)
 ##' @param ... other arguments
 ##' @rdname coeftest
 ##' @S3method coeftest reg
+##' @export
 coeftest.reg <- function(x, vcov.=c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"), df = NULL) {
     vcov. <- match.arg(vcov.)
     b <- coef(x)

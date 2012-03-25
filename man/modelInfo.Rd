@@ -24,6 +24,9 @@
 
   modelInfo.summary.lrm(x)
 }
+\arguments{
+  \item{...}{a model passed to \code{outreg2}.}
+}
 \value{
   A \code{model.info} object.
 }

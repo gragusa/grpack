@@ -35,10 +35,9 @@
 ##' \code{method = "qr"} is supported; \code{method = "model.frame"}
 ##' returns the model frame (the same as with \code{model = TRUE}, see
 ##' below).
-##' @param model  
-##' @param x 
-##' @param y 
-##' @param qr 
+##' @param model, y, x, qr logical.  logicals.  If ‘TRUE’ the corresponding
+##' components of the fit (the model frame, the model matrix, the response, the
+##' QR decomposition) are returned.  
 ##' @param singular.ok logical. If FALSE (the default in S but not in
 ##' R) a singular fit is an error.
 ##' @param contrasts an optional list. See the contrasts.arg of
@@ -473,18 +472,19 @@ coeftestdefault <- function (x, vcov. = NULL, df = NULL, ...)
     return(rval)
 }
 
-##' coef is a method  for performing z and (quasi-)t
+##' \code{coef} is a method  for performing z and (quasi-)t
 ##' tests of estimated coefficients through \code{reg}
 ##'
 ##' Details
+##' 
 ##' @title Testing Estimated Coefficients
 ##' @param x a \code{reg} object
 ##' @param vcov a covariance type
 ##' @param df the degrees of freedom to be used. If this is a finite
 ##' positive number a t test with df degrees of freedom is
 ##' performed. In all other cases, a z test (using a normal
-##' approximation) is performed. If the \code{reg} has a
-##' \code{cluster} component and \df} is \code{NULL} a t test with G-1
+##' approximation) is performed. If the \code{reg} object has a
+##' \code{cluster} component and df is \code{NULL} a t test with G-1
 ##' degrees of freedom is performed. 
 ##' @param ... other arguments
 ##' @rdname coeftest

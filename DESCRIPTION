@@ -9,6 +9,16 @@ LinkingTo: Rcpp, RcppArmadillo
 Description: More about what it does (maybe more than one line)
 License: GPL (version 2 or later)
 ByteCompile: FALSE
+Imports:
+    Hmisc,
+    lmtest,
+    Rcpp,
+    RcppArmadillo,
+    sandwich,
+    stringr
+Depends:
+    R (>= 2.15),
+    zoo
 Collate:
     'grpack.R'
     'output.R'
@@ -18,3 +28,4 @@ Collate:
     'wildboot.R'
     'outreg2.R'
     'latex2.R'
+    'optim.R'

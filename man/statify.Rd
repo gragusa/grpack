@@ -7,7 +7,7 @@
     full = TRUE, mask, df = NULL, ...)
 }
 \arguments{
-  \item{x}{a suitable regression object}
+  \item{x}{a suitable object}
 
   \item{vcov.}{the variance to be used}
 

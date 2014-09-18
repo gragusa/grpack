@@ -1,13 +1,9 @@
 # Ignore DS_file
 .DS_Store
-
 # Ignore src-i386 and src-x64
 src-*
 .Rproj.user
-
 # Ignore Rhistory
 .Rhistory
-
 # ignore .RData
 .RData
-

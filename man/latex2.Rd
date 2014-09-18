@@ -44,15 +44,15 @@
   are subsequently coloured in green and in pink.}
 }
 \value{
-  See \code{\link{latex}} of package \cod{Hmisc}.
+  See \code{\link{latex}} of package \code{Hmisc}.
 }
 \description{
   Exactly like latex of \code{Hmisc}, but fix a bug when
   using \code{ctable=TRUE} and add three arguments:
-  \cod{do.begin}, \code{do.end}, \code{tight}.
+  \code{do.begin}, \code{do.end}, \code{tight}.
 }
 \details{
-  .. content for \details{} ..
+  Details here
 }
 \author{
   Giuseppe Ragusa

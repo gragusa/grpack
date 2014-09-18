@@ -1,3 +1,16 @@
+##' "Statify" regression output
+##'
+##' Given a regression object out a stata-like table of results.
+##' 
+##' @title statify regression object
+##' @param x a suitable object
+##' @param vcov. the variance to be used
+##' @param full if full output is needed
+##' @param mask coefficient to be exluded
+##' @param df degrees of freedom for the p-values
+##' @param ... 
+##' @return Output 
+##' @author Giuseppe M. Ragusa
 ##' @export
 statify <- function(x,
                     vcov. = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"),
@@ -63,8 +76,8 @@ statify <- function(x,
   
   cat('------------------------------------------------------------------------------\n')
   if(type!="const")
-    cat('                              Robust\n')
-  cat('   ',y,' |      Coef.    Std. Err.     t    P>|t|     [95% Conf. Interval]\n', sep = '')
+    cat('                             Robust\n')
+  cat('           ',y,' |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]\n', sep = '')
   cat('------------------------------------------------------------------------------\n')
   for(j in 1:length(coef(x)))
     ##cat(vn[j],' |', cf[j,1],' ',cf[j,2],' ', cf[j,3],'  ',cf[j,4],'   ',cf[j,5],'  ',cf[j,6],'\n', sep ='')
@@ -170,93 +183,157 @@ eviews.regression <-
 lmlatexline <- function(x, ...)
     UseMethod('lmlatexline')
 
+  
+
 ##' @S3method lmlatexline reg
-lmlatexline.reg <- function(object, vcov., ..., inline = FALSE, 
+lmlatexline.reg <- function(x, se= TRUE, vcov., ..., r2 = FALSE, 
+                            dmath = FALSE, inline = FALSE, 
+                            purge.factor.name = TRUE, purge.I = TRUE,
                             digits = max(3, getOption("digits") - 3),
-                            scipen = options('scipen')[[1]], dmath = FALSE, r2 = FALSE) {
-    coeff <- coef(object)
-    if(missing(vcov.))
-        vcov. <- vcov.reg
-    se <- sqrt(diag(vcov.(object, ...)))
-    sc <- ifelse(coeff>0,"+","-")
-    cf <- names(coeff)
-    ff <- attributes(object$terms)$factors
-    yv <- rownames(ff)[rowSums(ff) == 0]
-    trio <- format(round(cbind(abs(coeff), se), digits), digits = digits, trim = TRUE,
-                   scientific = scipen)
-    if(r2)
-        r2 <- summary(object)$r.squared
-    else
-        r2 <- FALSE
-    lmlatexline.print(trio, sc, yv, cf, dmath, r2, inline)
+                            scipen = options('scipen')[[1]]) 
+  {
+  coeff <- coef(x)
+  if(missing(vcov.))
+    vcov. <- vcov.reg
+  serr <- sqrt(diag(vcov.(x, ...)))
+  sc <- ifelse(coeff>0,"+","-")
+  cf <- names(coeff)
+  ff <- attributes(x$terms)$factors
+  yv <- rownames(ff)[rowSums(ff) == 0]
+
+  tmp <- cbind(abs(coeff), serr)
+  ##tmp <- round(tmp_original, 2)
+  tmp1 <- round(tmp[,1], digits = digits)
+  tmp2 <- round(tmp[,2], digits = digits)
+  
+  digits0 <- digits
+  while(any(tmp2==0)) {
+    test <- tmp2==0
+    digits0 <- digits0+1
+    tmp2[which(test)] <- round(tmp[which(test),2], digits = digits0)      
+  }
+  
+  digits0 <- digits
+  while(any(tmp1==0)) {
+    test <- tmp1==0
+    digits0 <- digits0+1
+    tmp1[which(test)] <- round(tmp[which(test),1], digits = digits0)      
+  }
+  
+  trio <- format(cbind(tmp1,tmp2), digits=max(1, digits-1), drop0trailing=TRUE, scientific = 10000)
+  if(nrow(trio)==1) rownames(trio) <- cf
+  
+  if(r2)
+    r2 <- summary(x)$r.squared
+  else
+    r2 <- FALSE
+  
+  if(purge.factor.name) {
+    topurge <- names(which(attributes(x$terms)$dataClasses=="factor"))
+    for(j in topurge) {
+      rownames(trio) <- str_replace_all(rownames(trio), j, "")   
+    }
+  }
+  
+  if(purge.I) {
+    tmp <- str_locate(rownames(trio), "I\\(")
+    whereI <- which(!is.na(tmp[,1]))
+    for(j in whereI) {
+      rownames(trio)[j] <- str_sub(rownames(trio)[j], start = 3, end = str_length(rownames(trio)[j])-1)
+    }
+  }
+  
+  
+  
+  lmlatexline.print(trio, sc, yv, cf, dmath, r2, se, inline)
 }
+
+##' @S3method lmlatexline lm
+lmlatexline.lm <- lmlatexline.reg
+
 
 ##' @S3method lmlatexline ivreg
-lmlatexline.ivreg <- function(object, vcov., ..., inline = FALSE, 
-                            digits = max(3, getOption("digits") - 3),
-                            scipen = options('scipen')[[1]], dmath = FALSE) {
-    coeff <- coef(object)
-    if(missing(vcov.))
-        vcov. <- vcov.ivreg
-    se <- vcov.(object, ...)
-    sc <- ifelse(coeff>0,"+","-")
-    cf <- names(coeff)
-    ff <- attributes(object$terms)$factors
-    yv <- rownames(ff)[rowSums(ff) == 0]
-    trio <- format(round(cbind(abs(coeff), se), digits), digits = digits, trim = TRUE,
-                   scientific = scipen)
-    r2 <- FALSE
-    lmlatexline.print(trio, sc, yv, cf, dmath, r2, inline)
+lmlatexline.ivreg <- function(x, se = TRUE., vcov., ..., 
+                              dmath = FALSE, inline = FALSE, 
+                              digits = max(3, getOption("digits") - 3),
+                              scipen = options('scipen')[[1]]) {
+  object <- x
+  coeff <- coef(object)
+  if(missing(vcov.))
+    vcov. <- vcov.ivreg
+  serr <- vcov.(object, ...)
+  sc <- ifelse(coeff>0,"+","-")
+  cf <- names(coeff)
+  ff <- attributes(object$terms)$factors
+  yv <- rownames(ff)[rowSums(ff) == 0]
+  trio <- format(round(cbind(abs(coeff), serr), digits), digits = digits, trim = TRUE,
+                 scientific = scipen)
+  r2 <- FALSE
+  lmlatexline.print(trio, sc, yv, cf, dmath, r2, se, inline)
 }
 
-lmlatexline.print <- function(trio, sc, yv, cf, dmath, r2, inline) {
-    pstd <- function(z)
-        paste('\\underset{(',z[2],')}{',z[1],'}\\times ',rownames(z), sep = '')
-
-    if(cf[[1]] == '(Intercept)')
-        rs <- paste(yv, "=", "\\underset{(", trio[1,2], ")}{", trio[1,1], "}", sep = '')
-    else
-        rs <- paste(yv,'=', sc[1], pstd(trio[1,,false]))
-        
-    for (j in 2:NROW(trio))
-        rs <- paste(rs, sc[j], pstd(trio[j,,drop = FALSE]), paste = '')
-
-    if(r2)
-    {
-        if(dmath)
-            rs <- paste(rs, ',\\condition[]{$R^2 =', format(r2, digits = 3),'$}', sep = '')
-        else
-            rs <- paste(rs, ',\\quad R^2 =', format(r2, digits = 3), sep = '')
+lmlatexline.print <- function(trio, sc, yv, cf, dmath, r2, se, inline) {
+  pstd <- function(z)
+    paste('\\underset{(',z[2],')}{',z[1],'} \\,',rownames(z), sep = '')
+  
+  pstd_nose <- function(z) {
+    paste(z[1], '\\,', rownames(z), sep = '')
+  }
+  
+  if(cf[[1]] == '(Intercept)')
+    if(se) {
+      rs <- paste(yv, "=", "\\underset{(", trio[1,2], ")}{", trio[1,1], "}", sep = '')
+    } else {
+      rs <- paste(yv, "=",  trio[1,1], sep = '')
+    }
+  else
+    if(se) {
+      rs <- paste(yv,'=', sc[1], pstd(trio[1,,drop=FALSE]))
+    } else {
+      rs <- paste(yv,'=', sc[1], trio[1,1])
     }
 
-    if(inline)
-        cat("\n$",rs,"$\n")
-    else
-    {
-        if(dmath)
-            cat("\n\\begin{dmath*}")
-        else
-            cat("\n\\begin{equation*}")
-        cat("\n",rs,"\n")
-        if(dmath)
-            cat("\\end{dmath*}\n\n")
-        else
-            cat("\\end{equation*}\n\n")
+  if(NROW(trio)>1) {
+  for (j in 2:NROW(trio)) {
+    if(se) {
+      rs <- paste(rs, sc[j], pstd(trio[j,,drop = FALSE]), sep = '')
+    } else {
+      rs <- paste(rs, sc[j], pstd_nose(trio[j,,drop=FALSE]), sep="")
     }
+  } 
+}
+
+  if(r2) {
+    if(dmath)
+      rs <- paste(rs, '\\condition[,]{$R^2 =', format(r2, digits = 3),'$}', sep = '')
+    else
+      rs <- paste(rs, ',\\quad R^2 =', format(r2, digits = 3), sep = '')
+  }
+
+  if(inline)
+    cat("\n$",rs,"$\n")
+  else {
+    if(dmath)
+      cat("\n\\begin{dmath*}")
+    else
+      cat("\n\\begin{equation*}")
+    cat("\n",rs,"\n")
+    if(dmath)
+      cat("\\end{dmath*}\n\n")
+    else
+      cat("\\end{equation*}\n\n")
+  }
 }
 
 format.perc <- function(probs, digits)
-    ## Not yet exported, maybe useful in other contexts:
-    ## quantile.default() sometimes uses a version of it
-    ## Manually exported!!
-    paste(format(100 * probs, trim = TRUE, scientific = FALSE, digits = digits),
-	  "%")
+  ## Not yet exported, maybe useful in other contexts:
+  ## quantile.default() sometimes uses a version of it
+  ## Manually exported!!
+  paste(format(100 * probs, trim = TRUE, scientific = FALSE, digits = digits), "%")
 
-fswv <- function(x, digits = 3)
-    formatC(x, format = 'f', digits = digits)
-
-
-
+fswv <- function(x, digits = 3) {
+  formatC(x, format = 'f', digits = digits)
+}
 
 printMatCoef <-
     function(x, digits = max(3, getOption("digits") - 2),
@@ -272,7 +349,7 @@ printMatCoef <-
     ## For printing ``coefficient matrices'' as they are in summary.xxx(.) where
     ## xxx in {lm, glm, aov, ..}. (Note: summary.aov(.) gives a class "anova").
 
-    ## By Default
+    ## By Default:
     ## Assume: x is a matrix-like numeric object.
     ## ------  with *last* column = P-values  --iff-- P.values (== TRUE)
     ##	  columns {cs.ind}= numbers, such as coefficients & std.err  [def.: 1L:k]
@@ -362,8 +439,7 @@ printMatCoef <-
 }
 
 
-stripzero <- function(string)
-{
+stripzero <- function(string) {
     if(is.matrix(string))
         string <- apply(str, 1, function(x) if(!is.na(pmatch('0.',x))) paste('.',strsplit(x, '0.')[[1]][2], sep =''))
     if(is.array(string)| length(string)>1)

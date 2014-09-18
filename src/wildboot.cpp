@@ -41,10 +41,10 @@ extern "C" {
   int clsize[ncl];
 
   for(unsigned int j = 0; j<ncl; ++j)
-    {
-      clstart[j] = (int)clusstart(j);
-      clsize[j] =  (int)clussize(j);
-    }
+			{
+				clstart[j] = (int)clusstart(j);
+				clsize[j] =  (int)clussize(j);
+			}
 
   const int *c1 = clstart;
   const int *c2 = clsize;
@@ -75,104 +75,104 @@ extern "C" {
   arma::mat Xp=strans(X);
   int idr, idy;
   for(int i = 0; i<replications[0]; ++i)
-    {
-      for(unsigned int j = 0; j<ncl; ++j)
-	{
-	  idr = clusstart[j]-1;
-	  idy = (clussize[j]-2)+clusstart[j];
-	  if(type[0] == 1) {
-	    ti = (runif(1, 0, 1))[0];
-	    if(ti<0.5) ti = -1; else ti = 1;
-	  }
-	  else if(type[0] == 2) {
-	    ti = (runif(1,0,1))[0];
-	    if(ti<tpp) ti = tp1; else ti = tp2;
-	  }
-	  else if(type[0] == 3) {
-	    ti = (rnorm(1, 0,1))[0];
-	    ti = ti/sqrt(2.0)+(pow(ti,2.0)-1.)/2.;
-	  }
-	  else if(type[0] == 4) {
-	    ti = (rnorm(1,0,1))[0];
-	    ti = (delta1+ti/sqrt(2.))*(delta2+ti/sqrt(2.))-delta1*delta2;
-	  }
-	  ustar.rows(idr, idy) = uhat.rows(idr, idy)*ti;
-	}
+			{
+				for(unsigned int j = 0; j<ncl; ++j)
+					{
+						idr = clusstart[j]-1;
+						idy = (clussize[j]-2)+clusstart[j];
+						if(type[0] == 1) {
+							ti = (runif(1, 0, 1))[0];
+							if(ti<0.5) ti = -1; else ti = 1;
+						}
+						else if(type[0] == 2) {
+							ti = (runif(1,0,1))[0];
+							if(ti<tpp) ti = tp1; else ti = tp2;
+						}
+						else if(type[0] == 3) {
+							ti = (rnorm(1, 0,1))[0];
+							ti = ti/sqrt(2.0)+(pow(ti,2.0)-1.)/2.;
+						}
+						else if(type[0] == 4) {
+							ti = (rnorm(1,0,1))[0];
+							ti = (delta1+ti/sqrt(2.))*(delta2+ti/sqrt(2.))-delta1*delta2;
+						}
+						ustar.rows(idr, idy) = uhat.rows(idr, idy)*ti;
+					}
       
-      bout.row(i) = (beta + XX*Xp*ustar).st(); 
-      // Rcout << "beta\n" << std::endl;
-      // Rf_PrintValue(wrap(bout));
-      // Rcout << "ustar\n" << std::endl;
-      // Rf_PrintValue(wrap(ustar));
-      ustar = Yhat+ustar-X*(bout.row(i)).st();
-      WW.zeros(); 
-
-      // HC1 type variance
-      for(unsigned int j = 0; j<obs; ++j)
-	for(unsigned int i = 0; i<k; ++i)
-	  score(j,i) = (X(j,i)*ustar(j));
-      for(unsigned int j = 0; j<(obs*k); ++j)
-	u[j] = score(j);     
-      robcovf(obs, k, ncl, c1, c2, u, s, v, w);
-      for(unsigned int j = 0; j<(k*k); ++j)
-	WW(j)=w[j];
-      V = adj1*(XX*WW*XX);
-      seout_HC1.row(i) = sqrt((V.diag()).st());
-
-      // HC2 type variance      
-      for(unsigned int jj = 0; jj<ncl; ++jj) {
-	idr = clusstart[jj]-1;
-	idy = (clussize[jj]-2)+clusstart[jj];
-	arma::mat Xi  = X.rows(idr, idy);
-	arma::mat Identity=arma::eye(Xi.n_rows, Xi.n_rows);
-	arma::mat Hgg = arma::chol(Identity - Xi*XX*strans(Xi));
-	ustar.rows(idr, idy) = arma::solve(Hgg, ustar.rows(idr, idy));
-      }
-      for(unsigned int j = 0; j<obs; ++j)
-	for(unsigned int i = 0; i<k; ++i)
-	  score(j,i) = (X(j,i)*ustar(j));
-      for(unsigned int j = 0; j<(obs*k); ++j)
-	u[j] = score(j);     
-      robcovf(obs, k, ncl, c1, c2, u, s, v, w);
-      for(unsigned int j = 0; j<(k*k); ++j)
-	WW(j)=w[j];
-      V = (XX*WW*XX);
-      seout_HC2.row(i) = sqrt((V.diag()).st());
-      
-      // HC3 Type Variance
-
-      for(unsigned int jj = 0; jj<ncl; ++jj) {
-	idr = clusstart[jj]-1;
-	idy = (clussize[jj]-2)+clusstart[jj];
-	arma::mat Xi  = X.rows(idr, idy);
-	arma::mat Identity=arma::eye(Xi.n_rows, Xi.n_rows);
-	arma::mat Hgg = Identity - Xi*XX*strans(Xi);
-	ustar.rows(idr, idy) = arma::solve(Hgg, ustar.rows(idr, idy));
-      }
-      for(unsigned int j = 0; j<obs; ++j)
-	for(unsigned int i = 0; i<k; ++i)
-	  score(j,i) = (X(j,i)*ustar(j));
-      for(unsigned int j = 0; j<(obs*k); ++j)
-	u[j] = score(j);     
-      robcovf(obs, k, ncl, c1, c2, u, s, v, w);
-      for(unsigned int j = 0; j<(k*k); ++j)
-	WW(j)=w[j];
-      V = adj3*XX*WW*XX;      
-      seout_HC3.row(i) = sqrt((V.diag()).st());
-    }
+				bout.row(i) = (beta + XX*Xp*ustar).st(); 
+				// Rcout << "beta\n" << std::endl;
+				// Rf_PrintValue(wrap(bout));
+				// Rcout << "ustar\n" << std::endl;
+				// Rf_PrintValue(wrap(ustar));
+				ustar = Yhat+ustar-X*(bout.row(i)).st();
+				WW.zeros(); 
+				
+				// HC1 type variance
+				for(unsigned int j = 0; j<obs; ++j)
+					for(unsigned int i = 0; i<k; ++i)
+						score(j,i) = (X(j,i)*ustar(j));
+				for(unsigned int j = 0; j<(obs*k); ++j)
+					u[j] = score(j);     
+				robcovf(obs, k, ncl, c1, c2, u, s, v, w);
+				for(unsigned int j = 0; j<(k*k); ++j)
+					WW(j)=w[j];
+				V = adj1*(XX*WW*XX);
+				seout_HC1.row(i) = sqrt((V.diag()).st());
+				
+				// HC2 type variance      
+				for(unsigned int jj = 0; jj<ncl; ++jj) {
+					idr = clusstart[jj]-1;
+					idy = (clussize[jj]-2)+clusstart[jj];
+					arma::mat Xi  = X.rows(idr, idy);
+					arma::mat Identity=arma::eye(Xi.n_rows, Xi.n_rows);
+					arma::mat Hgg = arma::chol(Identity - Xi*XX*strans(Xi));
+					ustar.rows(idr, idy) = arma::solve(Hgg, ustar.rows(idr, idy));
+				}
+				for(unsigned int j = 0; j<obs; ++j)
+					for(unsigned int i = 0; i<k; ++i)
+						score(j,i) = (X(j,i)*ustar(j));
+				for(unsigned int j = 0; j<(obs*k); ++j)
+					u[j] = score(j);     
+				robcovf(obs, k, ncl, c1, c2, u, s, v, w);
+				for(unsigned int j = 0; j<(k*k); ++j)
+					WW(j)=w[j];
+				V = (XX*WW*XX);
+				seout_HC2.row(i) = sqrt((V.diag()).st());
+				
+				// HC3 Type Variance
+				
+				for(unsigned int jj = 0; jj<ncl; ++jj) {
+					idr = clusstart[jj]-1;
+					idy = (clussize[jj]-2)+clusstart[jj];
+					arma::mat Xi  = X.rows(idr, idy);
+					arma::mat Identity=arma::eye(Xi.n_rows, Xi.n_rows);
+					arma::mat Hgg = Identity - Xi*XX*strans(Xi);
+					ustar.rows(idr, idy) = arma::solve(Hgg, ustar.rows(idr, idy));
+				}
+				for(unsigned int j = 0; j<obs; ++j)
+					for(unsigned int i = 0; i<k; ++i)
+						score(j,i) = (X(j,i)*ustar(j));
+				for(unsigned int j = 0; j<(obs*k); ++j)
+					u[j] = score(j);     
+				robcovf(obs, k, ncl, c1, c2, u, s, v, w);
+				for(unsigned int j = 0; j<(k*k); ++j)
+					WW(j)=w[j];
+				V = adj3*XX*WW*XX;      
+				seout_HC3.row(i) = sqrt((V.diag()).st());
+			}
   
   // return
   return Rcpp::List::create(
-			    Rcpp::Named("coef_wb") = bout,
-			    Rcpp::Named("sd_wb_HC1") = seout_HC1, 
-			    Rcpp::Named("sd_wb_HC2") = seout_HC2,
-			    Rcpp::Named("sd_wb_HC3") = seout_HC3
-			    );
+																												Rcpp::Named("coef_wb") = bout,
+																												Rcpp::Named("sd_wb_HC1") = seout_HC1, 
+																												Rcpp::Named("sd_wb_HC2") = seout_HC2,
+																												Rcpp::Named("sd_wb_HC3") = seout_HC3
+																												);
   }
-  
+	
 
-  void robcovf(const int n, const int kv, const int ncl,  int* start, 
-	       int* len, double* u, double* s, double* v, double* w)
+  void robcovf(const int n, const int kv, const int ncl, const int* start, 
+	       const int* len, double* u, double* s, double* v, double* w)
   {
     /* System generated locals */
     int i2;
@@ -216,43 +216,43 @@ extern "C" {
 }
 
 extern "C" SEXP resHC3(SEXP Xr, SEXP rr, SEXP Rr, SEXP clusstartr, SEXP clussizer) {
-  arma::mat X=Rcpp::as<arma::mat>(Xr);
-  arma::mat r=Rcpp::as<arma::colvec>(rr);
-  arma::mat R=Rcpp::as<arma::mat>(Rr);
-  Rcpp::IntegerVector clusstart(clusstartr);
-  Rcpp::IntegerVector clussize(clussizer);
-  int ncl = clussize.size();
-  int obs = X.n_rows;
-  arma::mat res(obs,1);
-  for(unsigned int jj = 0; jj<ncl; ++jj) {
-    int idr = clusstart[jj]-1;
-    int idy = (clussize[jj]-2)+clusstart[jj];
-    arma::mat Xi  = X.rows(idr, idy);
-    arma::mat Identity=arma::eye(Xi.n_rows, Xi.n_rows);
-    res.rows(idr, idy) = arma::solve(Identity - Xi*R*Xi.st(), r.rows(idr, idy));
-  }
-  res = sqrt((double)ncl/(double)(ncl-1))*res;
-  return Rcpp::wrap(res);
+	arma::mat X=Rcpp::as<arma::mat>(Xr);
+	arma::mat r=Rcpp::as<arma::colvec>(rr);
+	arma::mat R=Rcpp::as<arma::mat>(Rr);
+	Rcpp::IntegerVector clusstart(clusstartr);
+	Rcpp::IntegerVector clussize(clussizer);
+	int ncl = clussize.size();
+	int obs = X.n_rows;
+	arma::mat res(obs,1);
+	for(unsigned int jj = 0; jj<ncl; ++jj) {
+		int idr = clusstart[jj]-1;
+		int idy = (clussize[jj]-2)+clusstart[jj];
+		arma::mat Xi  = X.rows(idr, idy);
+		arma::mat Identity=arma::eye(Xi.n_rows, Xi.n_rows);
+		res.rows(idr, idy) = arma::solve(Identity - Xi*R*Xi.st(), r.rows(idr, idy));
+	}
+	res = sqrt((double)ncl/(double)(ncl-1))*res;
+	return Rcpp::wrap(res);
 }
 
 extern "C" SEXP resHC2(SEXP Xr, SEXP rr, SEXP Rr, SEXP clusstartr, SEXP clussizer) {
-  arma::mat X=Rcpp::as<arma::mat>(Xr);
-  arma::mat r=Rcpp::as<arma::colvec>(rr);
-  arma::mat R=Rcpp::as<arma::mat>(Rr);
-  Rcpp::IntegerVector clusstart(clusstartr);
-  Rcpp::IntegerVector clussize(clussizer);
-  int ncl = clussize.size();
-  int obs = X.n_rows;
-  arma::mat res(obs,1);
-  for(unsigned int jj = 0; jj<ncl; ++jj) {
-    int idr = clusstart[jj]-1;
-    int idy = (clussize[jj]-2)+clusstart[jj];
-    arma::mat Xi  = X.rows(idr, idy);
-    arma::mat Identity=arma::eye(Xi.n_rows, Xi.n_rows);
-    arma::mat Hgg = arma::chol(Identity - Xi*R*Xi.st());
-    res.rows(idr, idy) = arma::solve(Hgg, r.rows(idr, idy));
-  }
-  return Rcpp::wrap(res);
+	arma::mat X=Rcpp::as<arma::mat>(Xr);
+	arma::mat r=Rcpp::as<arma::colvec>(rr);
+	arma::mat R=Rcpp::as<arma::mat>(Rr);
+	Rcpp::IntegerVector clusstart(clusstartr);
+	Rcpp::IntegerVector clussize(clussizer);
+	int ncl = clussize.size();
+	int obs = X.n_rows;
+	arma::mat res(obs,1);
+	for(unsigned int jj = 0; jj<ncl; ++jj) {
+		int idr = clusstart[jj]-1;
+		int idy = (clussize[jj]-2)+clusstart[jj];
+		arma::mat Xi  = X.rows(idr, idy);
+		arma::mat Identity=arma::eye(Xi.n_rows, Xi.n_rows);
+		arma::mat Hgg = arma::chol(Identity - Xi*R*Xi.st());
+		res.rows(idr, idy) = arma::solve(Hgg, r.rows(idr, idy));
+	}
+	return Rcpp::wrap(res);
 }
 
 

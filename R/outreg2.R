@@ -2,27 +2,25 @@ mylatex <- function (object, title = first.word(deparse(substitute(object))),
                      file = paste(title, ".tex", sep = ""), append = FALSE, label = title, 
                      rowlabel = title, rowlabel.just = "l", cgroup = NULL, n.cgroup = NULL, 
                      rgroup = NULL, n.rgroup = NULL, 
-                     cgroupTexCmd = NULL, 
-                     rgroupTexCmd = NULL, rownamesTexCmd = NULL, colnamesTexCmd = NULL, 
-                     cellTexCmds = NULL, rowname, cgroup.just = rep("c", sum(n.cgroup)-1), 
-                     colheads = NULL, extracolheads = NULL, extracolsize = "scriptsize", 
+                     cgroupTexCmd = NULL,  rgroupTexCmd = NULL, rownamesTexCmd = NULL, 
+                     colnamesTexCmd = NULL,  cellTexCmds = NULL, rowname, 
+                     cgroup.just = rep("c", sum(n.cgroup)-1),  colheads = NULL, 
+                     extracolheads = NULL, extracolsize = "scriptsize", 
                      dcolumn = FALSE, numeric.dollar = !dcolumn, cdot = FALSE, 
                      longtable = FALSE, draft.longtable = TRUE, ctable = FALSE, 
                      booktabs = FALSE, table.env = TRUE, here = FALSE, lines.page = 40, 
                      caption = NULL, caption.lot = NULL, caption.loc = c("top","bottom"), 
                      double.slash = FALSE, vbar = FALSE, collabel.just = rep("c", nc),                                    na.blank = TRUE, insert.bottom = NULL, 
-                     do.begin=TRUE, do.end=TRUE,
-                     first.hline.double = !(booktabs | ctable), 
-                     where = "!tbp", size = NULL, 
-                     center = c("center", "centering", "none"), landscape = FALSE, multicol = TRUE, 
-                     math.row.names = FALSE, math.col.names = FALSE, rowcolors=NULL) 
+                     do.begin=TRUE, do.end=TRUE, first.hline.double = !(booktabs | ctable), 
+                     where = "!tbp", size = NULL,  center = c("center", "centering", "none"), 
+                     landscape = FALSE, multicol = TRUE,  math.row.names = FALSE, math.col.names = FALSE, rowcolors=NULL, ...) 
 {
   center <- match.arg(center)
   caption.loc <- match.arg(caption.loc)
-#   cx <- format.df(object, dcolumn = dcolumn, na.blank = na.blank, 
-#                   numeric.dollar = numeric.dollar, cdot = cdot, math.row.names = math.row.names, 
-#                   math.col.names = math.col.names, double.slash = double.slash, 
-#                   ...)
+  #cx <- format.df(object, dcolumn = dcolumn, na.blank = na.blank, 
+  #                numeric.dollar = numeric.dollar, cdot = cdot, math.row.names = math.row.names, 
+  #                math.col.names = math.col.names, double.slash = double.slash, 
+  #                ...)
   cx <- object
   if (missing(rowname)) 
     rowname <- dimnames(cx)[[1]]
@@ -451,10 +449,10 @@ mylatex <- function (object, title = first.word(deparse(substitute(object))),
   }
 
 
-beautify.out.matrix <- function(z, dec = 2){
+beautify.out.matrix <- function(z, dec = dec){
   ## First: add parenthesis to standard errors
   x <- z$out.matrix  
-  x <- x.old <- format.df(x, dec = 2, dcolumn=TRUE, na.blank=TRUE)
+  x <- x.old <- format.df(x, dec = dec, dcolumn=TRUE, na.blank=TRUE)
   s <- z$stars  
   outrows <- nrow(x)
   seqq <- seq(2,outrows, 2)
@@ -542,7 +540,7 @@ beautify.out.matrix <- function(z, dec = 2){
 ##' @param append defaults to FALSE. Set to TRUE to append output to
 ##' an existing file.
 ##' @param label a text string representing a symbolic label for the
-##' table for referencing in the LaTeX \code{\label} and \code{\ref}
+##' table for referencing in the LaTeX \code{\\label} and \code{\\ref}
 ##' commands. \code{label} is only used if caption is given.
 ##' @param rowlabel 
 ##' @param rowlabel.just 
@@ -627,22 +625,24 @@ outreg2 <- function(..., model.list, model.names=NULL, order=c("lr","rl","longes
                    center=c('center','centering','none'),
                    landscape=FALSE,
                    multicol=TRUE,
-                   math.row.names=TRUE, math.col.names=FALSE, rowcolors=NULL)
+                   math.row.names=TRUE, math.col.names=FALSE, rowcolors=NULL,
+                   dec = 3)
 {
   ## Step 1. Send everything to apsrtable2
   if(missing(model.list))
     ml <- list(...)
   else     
     ml <- model.list
-  
-  coef.table <- apsrtable2(ml, model.names=model.names, 
+
+  coef.table <- apsrtable2(ml, 
+                           model.names=model.names, 
                            order=order, 
                            omitcoef=omitcoef, 
                            omit.model=omit.model,
                            coef.names=coef.names,                       
                            stars=stars,lev=lev)
   
-  table <- beautify.out.matrix(coef.table)
+  table <- beautify.out.matrix(coef.table, dec = dec)
   if(tight & dcolumn){
     old.col.just <- attr(table$out.matrix, 'col.just')
     attr(table$out.matrix, 'col.just') <- sub("-1", "1", old.col.just)
@@ -715,7 +715,7 @@ outreg2 <- function(..., model.list, model.names=NULL, order=c("lr","rl","longes
           multicol=multicol,
           math.row.names=math.row.names, 
           math.col.names=math.col.names,
-          rowcolors=rowcolors)
+          rowcolors=rowcolors, cdec = cdec)
           
 }
 

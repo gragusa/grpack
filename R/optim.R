@@ -1,7 +1,7 @@
 ##################################################################
 ## optim.R /
 ## Author: Giuseppe Ragusa 
-## Time-stamp: "2011-07-25 15:05:56 gragusa" 
+## Time-stamp: "2012-11-03 19:08:12 gragusa" 
 ##
 ## Description: optimization routines:
 ## bfgs -- smooth function minimization with the BFGS algorithm
@@ -166,6 +166,30 @@ calc.constraint <- function(x, s, min.x, max.x)
 ## Apart from returning the maximizer x, it also returns the
 ## function value f(x)
 ## the gradient f'(x), and the inverse hessian f''(x)^{-1}.
+
+##' Implements the Broyden-Fletcher-Goldfarb-Shanno algorithm for function
+##' minimization.
+##' 
+##' The function attempts to find
+##'
+##' argmin_{x s.t. min.x < x < max.x coord-wise} f(x)
+##'
+##' 
+##' @title bfgs
+##' @param x0 Tthe initial solution guess
+##' @param f_ The function to be minimized
+##' @param g_ The gradient of f_
+##' @param min.x lower bounds
+##' @param max.x upper bounds
+##' @param prec 
+##' @param verbose if TRUE diplay iteration nformation
+##' @return A list
+##'
+##' Apart from returning the maximizer x, it also returns the
+##' function value f(x) the gradient f'(x), and the inverse hessian
+##' f''(x)^{-1}.
+
+##' @author Giuseppe Ragusa
 bfgs <- function(x0, f_, g_,
 		 min.x=rep(-Inf, length(x0)),
 		 max.x=rep(Inf, length(x0)),

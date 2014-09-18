@@ -59,77 +59,77 @@ reg <- function(formula, data, subset, weights, na.action,
                 method = "qr", model = TRUE, x = FALSE, y = FALSE, qr = TRUE,
                 singular.ok = TRUE, contrasts = NULL, offset, cluster, ...)
 {     
-    ret.x <- x
-    ret.y <- y
-    cl <- match.call()
-    mf <- mfc <- match.call(expand.dots = FALSE)
-    m <- match(c("formula", "data", "subset", "weights", "na.action", 
-                 "offset", "cluster"), names(mf), 0L)
-    ## m[7] gives cluster mfc[[m[7]]]
-    ## m[4] gives weights
-    ## m[3] gives subset
-    mf <- mf[c(1L, m)]
-    mf$drop.unused.levels <- TRUE
-    mf[[1L]] <- as.name("model.frame")
-    mf <- eval(mf, parent.frame())
-    if (method == "model.frame") 
-        return(mf)
-    else if (method != "qr") 
-        warning(gettextf("method = '%s' is not supported. Using 'qr'", 
-            method), domain = NA)
-    mt <- attr(mf, "terms")
-    y <- model.response(mf, "numeric")
-    w <- as.vector(model.weights(mf))
-    if (!is.null(w) && !is.numeric(w)) 
-        stop("'weights' must be a numeric vector")
-    offset <- as.vector(model.offset(mf))
+  ret.x <- x
+  ret.y <- y
+  cl <- match.call()
+  mf <- mfc <- match.call(expand.dots = FALSE)
+  m <- match(c("formula", "data", "subset", "weights", "na.action", 
+               "offset", "cluster"), names(mf), 0L)
+  ## m[7] gives cluster mfc[[m[7]]]
+  ## m[4] gives weights
+  ## m[3] gives subset
+  mf <- mf[c(1L, m)]
+  mf$drop.unused.levels <- TRUE
+  mf[[1L]] <- as.name("model.frame")
+  mf <- eval(mf, parent.frame())
+  if (method == "model.frame") 
+    return(mf)
+  else if (method != "qr") 
+    warning(gettextf("method = '%s' is not supported. Using 'qr'", 
+                     method), domain = NA)
+  mt <- attr(mf, "terms")
+  y <- model.response(mf, "numeric")
+  w <- as.vector(model.weights(mf))
+  if (!is.null(w) && !is.numeric(w)) 
+    stop("'weights' must be a numeric vector")
+  offset <- as.vector(model.offset(mf))
+  if (!is.null(offset)) {
+    if (length(offset) == 1) 
+      offset <- rep(offset, NROW(y))
+    else if (length(offset) != NROW(y)) 
+      stop(gettextf("number of offsets is %d, should equal %d (number of observations)", 
+                    length(offset), NROW(y)), domain = NA)
+  }
+  cluster <- model.cluster(mf)
+  if (is.empty.model(mt)) {
+    x <- NULL
+    z <- list(coefficients = if (is.matrix(y)) matrix(, 0, 
+                                                      3) else numeric(0), residuals = y, fitted.values = 0 * 
+                y, weights = w, rank = 0L, df.residual = if (is.matrix(y)) nrow(y) else length(y))
     if (!is.null(offset)) {
-        if (length(offset) == 1) 
-            offset <- rep(offset, NROW(y))
-        else if (length(offset) != NROW(y)) 
-            stop(gettextf("number of offsets is %d, should equal %d (number of observations)", 
-                length(offset), NROW(y)), domain = NA)
+      z$fitted.values <- offset
+      z$residuals <- y - offset
     }
-    cluster <- model.cluster(mf)
-    if (is.empty.model(mt)) {
-        x <- NULL
-        z <- list(coefficients = if (is.matrix(y)) matrix(, 0, 
-            3) else numeric(0), residuals = y, fitted.values = 0 * 
-            y, weights = w, rank = 0L, df.residual = if (is.matrix(y)) nrow(y) else length(y))
-        if (!is.null(offset)) {
-            z$fitted.values <- offset
-            z$residuals <- y - offset
-        }
-    }
-    else {
-        x <- model.matrix(mt, mf, contrasts)
-        z <- if (is.null(w)) 
-            lm.fit(x, y, offset = offset, singular.ok = singular.ok, 
-                ...)
-        else lm.wfit(x, y, w, offset = offset, singular.ok = singular.ok, 
-            ...)
-    }
-    class(z) <- c("reg", if (is.matrix(y)) "mlm", "lm")
-    z$na.action <- attr(mf, "na.action")
-    z$offset <- offset
-    z$contrasts <- attr(x, "contrasts")
-    z$xlevels <- .getXlevels(mt, mf)
-    z$call <- cl
-    z$terms <- mt
-    z$cluster   <- cluster
-    z$clusterby <- mfc$cluster
-    z$weightedby  <- mfc$weights
-    z$subsetby  <- mfc$subset
-    z$aliased   <- is.na(coef(z))
-    if (model) 
-        z$model <- mf
-    if (ret.x) 
-        z$x <- x
-    if (ret.y) 
-        z$y <- y
-    if (!qr) 
-        z$qr <- NULL
-    z
+  }
+  else {
+    x <- model.matrix(mt, mf, contrasts)
+    z <- if (is.null(w)) 
+      lm.fit(x, y, offset = offset, singular.ok = singular.ok, 
+             ...)
+    else lm.wfit(x, y, w, offset = offset, singular.ok = singular.ok, 
+                 ...)
+  }
+  class(z) <- c("reg", if (is.matrix(y)) "mlm", "lm")
+  z$na.action <- attr(mf, "na.action")
+  z$offset <- offset
+  z$contrasts <- attr(x, "contrasts")
+  z$xlevels <- .getXlevels(mt, mf)
+  z$call <- cl
+  z$terms <- mt
+  z$cluster   <- cluster
+  z$clusterby <- mfc$cluster
+  z$weightedby  <- mfc$weights
+  z$subsetby  <- mfc$subset
+  z$aliased   <- is.na(coef(z))
+  if (model) 
+    z$model <- mf
+  if (ret.x) 
+    z$x <- x
+  if (ret.y) 
+    z$y <- y
+  if (!qr) 
+    z$qr <- NULL
+  z
 }
 
 ##' @S3method summary reg
@@ -138,123 +138,124 @@ summary.reg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "H
                          correlation = FALSE, symbolic.cor = FALSE,
                          ...)
 {            
-    z <- object
-    p <- z$rank
-    type <- match.arg(type)
-    
-    if (p == 0) {
-        r <- z$residuals
-        n <- length(r)
-        w <- z$weights
-        if (is.null(w)) {
-            rss <- sum(r^2)
-        } else {
-            rss <- sum(w * r^2)
-            r <- sqrt(w) * r
-        }
-        resvar <- rss/(n - p)
-        ans <- z[c("call", "terms")]
-        class(ans) <- "summary.lm"
-        ans$aliased <- is.na(coef(object))  # used in print method
-        ans$residuals <- r
-        ans$df <- c(0L, n, length(ans$aliased))
-        ans$coefficients <- matrix(NA, 0L, 4L)
-        dimnames(ans$coefficients)<-
-            list(NULL, c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
-        ans$sigma <- sqrt(resvar)
-        ans$r.squared <- ans$adj.r.squared <- 0
-        return(ans)
-    }
-    Qr <- object$qr
-    if (is.null(z$terms) || is.null(Qr))
-      stop("invalid \'lm\' object:  no 'terms' nor 'qr' component")
-    n <- NROW(Qr$qr)
-   
-    if(!is.null(z$clusterby)) {
-      rdf = length(unique(z$cluster))-1
-    } else {
-      rdf <- z$df.residual    
-    }
-    
-    if(is.na(z$df.residual) || rdf != z$df.residual)
-      warning("residual degrees of freedom in object suggest this is not an \"lm\" fit")
-    p1 <- 1:p
-    ## do not want missing values substituted here
+  z <- object
+  p <- z$rank
+  type <- match.arg(type)
+  
+  if (p == 0) {
     r <- z$residuals
-    f <- z$fitted.values
+    n <- length(r)
     w <- z$weights
-    X <- model.matrix(object)
     if (is.null(w)) {
-      mss <- if (attr(z$terms, "intercept"))
-        sum((f - mean(f))^2) else sum(f^2)
       rss <- sum(r^2)
-      w <- rep(1, n)
     } else {
-      mss <- if (attr(z$terms, "intercept")) {
-        m <- sum(w * f /sum(w))
-        sum(w * (f - m)^2)
-      } else sum(w * f^2)
       rss <- sum(w * r^2)
       r <- sqrt(w) * r
     }
-    resvar <- rss/rdf
-    R <- chol2inv(Qr$qr[p1, p1, drop = FALSE]) ## solve(X'X)
-    V <- vcov(object, type)
-    se <- sqrt(diag(V[Qr$pivot[p1],Qr$pivot[p1]]))
-    est <- z$coefficients[Qr$pivot[p1]]
-    tval <- est/se
+    resvar <- rss/(n - p)
     ans <- z[c("call", "terms")]
-    ans$residuals <- r
-    ans$coefficients <-
-      cbind(est, se, tval, 2*pt(abs(tval), rdf, lower.tail = FALSE))
-    dimnames(ans$coefficients)<-
-      list(names(z$coefficients)[Qr$pivot[p1]],
-           c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
+    class(ans) <- "summary.lm"
     ans$aliased <- is.na(coef(object))  # used in print method
+    ans$residuals <- r
+    ans$df <- c(0L, n, length(ans$aliased))
+    ans$coefficients <- matrix(NA, 0L, 4L)
+    dimnames(ans$coefficients)<-
+      list(NULL, c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
     ans$sigma <- sqrt(resvar)
-    ans$df <- c(p, rdf, NCOL(Qr$qr))
-    if (p != attr(z$terms, "intercept")) {
-      df.int <- if (attr(z$terms, "intercept")) 1L else 0L
-      ans$r.squared <- mss/(mss + rss)
-      ans$adj.r.squared <- 1 - (1 - ans$r.squared) * ((n - df.int)/rdf)
-      if(type=='const')
-        ans$fstatistic <- c(value = (mss/(p - df.int))/resvar,
-                            numdf = p - df.int, dendf = rdf)
-      else
-        ans$fstatistic <- tryCatch(c(value = (coef(object)[-1]%*%solve(V[-1,-1])%*%coef(object)[-1])/(p-1),
-                                     df = p-1), error = function(e) NULL)
-      
-    } else ans$r.squared <- ans$adj.r.squared <- 0
-    ##    ans$cov.unscaled <- R
-    ans$vcov <- V[Qr$pivot[p1],Qr$pivot[p1]]
-    ans$se <- se
-    dimnames(ans$vcov) <- dimnames(ans$coefficients)[c(1,1)]
-    if (correlation) {
-      ans$correlation <- (R * resvar)/outer(se, se)
-      dimnames(ans$correlation) <- dimnames(ans$cov.unscaled)
-      ans$symbolic.cor <- symbolic.cor
-    }
-    if(!is.null(z$na.action)) ans$na.action <- z$na.action
-    ans$type <- type
-    ans$clusterby <- z$clusterby
-    ans$cluster <-  z$cluster
-    ans$weightedby <- z$weightedby
-    ans$weights <- z$weights
-    class(ans) <- c("summary.reg","summary.lm")
-    ans
+    ans$r.squared <- ans$adj.r.squared <- 0
+    return(ans)
+  }
+  Qr <- object$qr
+  if (is.null(z$terms) || is.null(Qr))
+    stop("invalid \'lm\' object:  no 'terms' nor 'qr' component")
+  n <- NROW(Qr$qr)
+  
+  if(!is.null(z$clusterby)) {
+    rdf = length(unique(z$cluster))-1
+  } else {
+    rdf <- z$df.residual    
+  }
+  
+  if(is.na(z$df.residual) || rdf != z$df.residual)
+    warning("residual degrees of freedom in object suggest this is not an \"lm\" fit")
+  p1 <- 1:p
+  ## do not want missing values substituted here
+  r <- z$residuals
+  f <- z$fitted.values
+  w <- z$weights
+  X <- model.matrix(object)
+  if (is.null(w)) {
+    mss <- if (attr(z$terms, "intercept"))
+      sum((f - mean(f))^2) else sum(f^2)
+    rss <- sum(r^2)
+    w <- rep(1, n)
+  } else {
+    mss <- if (attr(z$terms, "intercept")) {
+      m <- sum(w * f /sum(w))
+      sum(w * (f - m)^2)
+    } else sum(w * f^2)
+    rss <- sum(w * r^2)
+    r <- sqrt(w) * r
+  }
+  resvar <- rss/rdf
+  R <- chol2inv(Qr$qr[p1, p1, drop = FALSE]) ## solve(X'X)
+  V <- vcov(object, type)
+  se <- sqrt(diag(V[Qr$pivot[p1],Qr$pivot[p1]]))
+  est <- z$coefficients[Qr$pivot[p1]]
+  tval <- est/se
+  ans <- z[c("call", "terms")]
+  ans$residuals <- r
+  ans$coefficients <-
+    cbind(est, se, tval, 2*pt(abs(tval), rdf, lower.tail = FALSE))
+  dimnames(ans$coefficients)<-
+    list(names(z$coefficients)[Qr$pivot[p1]],
+         c("Estimate", "Std. Error", "t value", "Pr(>|t|)"))
+  ans$aliased <- is.na(coef(object))  # used in print method
+  ans$sigma <- sqrt(resvar)
+  ans$df <- c(p, rdf, NCOL(Qr$qr))
+  if (p != attr(z$terms, "intercept")) {
+    df.int <- if (attr(z$terms, "intercept")) 1L else 0L
+    ans$r.squared <- mss/(mss + rss)
+    ans$adj.r.squared <- 1 - (1 - ans$r.squared) * ((n - df.int)/rdf)
+    if(type=='const')
+      ans$fstatistic <- c(value = (mss/(p - df.int))/resvar,
+                          numdf = p - df.int, dendf = rdf)
+    else
+      ans$fstatistic <- tryCatch(c(value = (coef(object)[-1]%*%solve(V[-1,-1])%*%coef(object)[-1])/(p-1),
+                                   df = p-1), error = function(e) NULL)
+    
+  } else ans$r.squared <- ans$adj.r.squared <- 0
+  ##    ans$cov.unscaled <- R
+  ans$vcov <- V[Qr$pivot[p1],Qr$pivot[p1]]
+  ans$se <- se
+  dimnames(ans$vcov) <- dimnames(ans$coefficients)[c(1,1)]
+  if (correlation) {
+    ans$correlation <- (R * resvar)/outer(se, se)
+    dimnames(ans$correlation) <- dimnames(ans$cov.unscaled)
+    ans$symbolic.cor <- symbolic.cor
+  }
+  if(!is.null(z$na.action)) ans$na.action <- z$na.action
+  ans$type <- type
+  ans$clusterby <- z$clusterby
+  ans$cluster <-  z$cluster
+  ans$weightedby <- z$weightedby
+  ans$weights <- z$weights
+  class(ans) <- c("summary.reg","summary.lm")
+  ans
 }
 
 ##' @S3method print summary.reg
 ##' @export
 print.summary.reg <-
-    function (x, digits = max(3, getOption("digits") - 3),
-              symbolic.cor = x$symbolic.cor,
-	      signif.stars= getOption("show.signif.stars"),...)
-{
-    cat("\nModel:\n")#S: ' ' instead of '\n'
-    cat(paste(deparse(x$call[[2]]), sep="\n", collapse = "\n"), "\n", sep="")
-    if(!is.null(x$weightedby))
-        cat("(weighted by", paste(deparse(x$weightedby)), " sum of wgt is ", format(sum(x$weights), digits=2), ")\n")
+  function (x, digits = max(3, getOption("digits") - 3),
+            symbolic.cor = x$symbolic.cor,
+            signif.stars= getOption("show.signif.stars"), verbose = TRUE,...)
+  {
+    if(verbose){
+      cat("\nModel:\n")#S: ' ' instead of '\n'
+      cat(paste(deparse(x$call[[2]]), sep="\n", collapse = "\n"), "\n", sep="")    
+    }
+    
     resid <- x$residuals
     df <- x$df
     rdf <- df[2L]
@@ -274,205 +275,206 @@ print.summary.reg <-
     ##     cat("ALL", df[1], "residuals are 0: no residual degrees of freedom!\n")
     ## }
     if (length(x$aliased) == 0L) {
-        cat("\nNo Coefficients\n")
+      cat("\nNo Coefficients\n")
     } else {
-        if (nsingular <- df[3L] - df[1L])
-            cat("\nCoefficients: (", nsingular,
-                " not defined because of singularities)\n", sep = "")
-        else cat("\n")
-        coefs <- x$coefficients
-        if(!is.null(aliased <- x$aliased) && any(aliased)) {
-            cn <- names(aliased)
-            coefs <- matrix(NA, length(aliased), 4, dimnames=list(cn, colnames(coefs)))
-            coefs[!aliased, ] <- x$coefficients
-        }
-        printCoefmat(coefs, digits=digits, signif.stars=signif.stars, na.print="NA", signif.legend = FALSE, ...)
-        ##printMatCoef(coefs, digits=digits, signif.stars=signif.stars, na.print="NA", ...)
+      if (nsingular <- df[3L] - df[1L])
+        cat("\nCoefficients: (", nsingular,
+            " not defined because of singularities)\n", sep = "")
+      else if(verbose) cat("\n")
+      coefs <- x$coefficients
+      if(!is.null(aliased <- x$aliased) && any(aliased)) {
+        cn <- names(aliased)
+        coefs <- matrix(NA, length(aliased), 4, dimnames=list(cn, colnames(coefs)))
+        coefs[!aliased, ] <- x$coefficients
+      }
+      printCoefmat(coefs, digits=digits, signif.stars=signif.stars, na.print="NA", signif.legend = FALSE, ...)
+      ##printMatCoef(coefs, digits=digits, signif.stars=signif.stars, na.print="NA", ...)
     }
     ##
     ##cat("\nResidual standard error:",
     ##	format(signif(x$sigma, digits)), "on", rdf, "degrees of freedom\n")
     if(nzchar(mess <- naprint(x$na.action))) cat("  (",mess, ")\n", sep="")
     if (!is.null(x$fstatistic)) {
-        fpval <- if(length(x$fstatistic)==3)
-            format.pval(pf(x$fstatistic[1L], x$fstatistic[2L],
-                           x$fstatistic[3L], lower.tail = FALSE), digits=digits)
-        else
-            format.pval(pchisq(x$fstatistic[1L], x$fstatistic[2L],
-                               lower.tail = FALSE), digits=digits)
-        cat('---\n')
-        cat("Multiple R-squared:", formatC(x$r.squared, digits=digits))
-        cat(", Adjusted R-squared:",formatC(x$adj.r.squared,digits=digits),
-            "\nF-statistic:", formatC(x$fstatistic[1], digits=digits),
-            "on", x$fstatistic[2])
-        if(x$type=='const') cat(" and", x$fstatistic[3])
-        cat(" DF, p-value:", fpval, "\n")
+      fpval <- if(length(x$fstatistic)==3)
+        format.pval(pf(x$fstatistic[1L], x$fstatistic[2L],
+                       x$fstatistic[3L], lower.tail = FALSE), digits=digits)
+      else
+        format.pval(pchisq(x$fstatistic[1L], x$fstatistic[2L],
+                           lower.tail = FALSE), digits=digits)
+      cat('---\n')
+      cat("Multiple R-squared:", formatC(x$r.squared, digits=digits))
+      cat(", Adjusted R-squared:",formatC(x$adj.r.squared,digits=digits),
+          "\nF-statistic:", formatC(x$fstatistic[1], digits=digits),
+          "on", x$fstatistic[2])
+      if(x$type=='const') cat(" and", x$fstatistic[3])
+      cat(" DF, p-value:", fpval, "\n")
     }
     if(x$type!="const") {
-         if(is.null(x$clusterby))
-             cat("Heteroskedastic robust std. err., type: ", x$type, '\n')
-         else
-             cat("Std err. adjusted for", length(unique(x$cluster))," clusters in", x$clusterby, "with", x$type, '\n')
-     }
+      if(is.null(x$clusterby))
+        cat("Heteroskedastic robust std. err., type: ", x$type, '\n')
+      else
+        cat("Std err. adjusted for", length(unique(x$cluster))," clusters in", x$clusterby, "with", x$type, '\n')
+    }
+    if(!is.null(x$weightedby))
+      cat("(weighted by", paste(deparse(x$weightedby)), " sum of wgt is ", format(sum(x$weights), digits=2), ")\n")
     cat("Signif. codes: ","'***' .001 '**' .01 '*' .05 '.' 0.1\n")
     correl <- x$correlation
     if (!is.null(correl)) {
-	p <- NCOL(correl)
-	if (p > 1L) {
-	    cat("\nCorrelation of Coefficients:\n")
-	    if(is.logical(symbolic.cor) && symbolic.cor) {# NULL < 1.7.0 objects
-		print(symnum(correl, abbr.colnames = NULL))
-	    } else {
-                correl <- format(round(correl, 2), nsmall = 2, digits = digits)
-                correl[!lower.tri(correl)] <- ""
-                print(correl[-1, -p, drop=FALSE], quote = FALSE)
-            }
-	}
+      p <- NCOL(correl)
+      if (p > 1L) {
+        cat("\nCorrelation of Coefficients:\n")
+        if(is.logical(symbolic.cor) && symbolic.cor) {# NULL < 1.7.0 objects
+          print(symnum(correl, abbr.colnames = NULL))
+        } else {
+          correl <- format(round(correl, 2), nsmall = 2, digits = digits)
+          correl[!lower.tri(correl)] <- ""
+          print(correl[-1, -p, drop=FALSE], quote = FALSE)
+        }
+      }
     }
+    
     cat("\n")#- not in S
     invisible(x)
-}
+  }
 
 ##' @S3method vcov reg
 ##' @export
 vcov.reg <- function (object,
                       type = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"),
                       ...) {
-    type <- match.arg(type)    
-    iscluster <- !is.null(object$cluster)
-    if(type=="const")
-        iscluster <- FALSE
-    z <- object
-    Qr <- z$qr    
-    if (is.null(z$terms) || is.null(Qr))
-        stop("invalid \'lm\' object:  no 'terms' nor 'qr' component")
-    p    <- z$rank
-    p1   <- 1:p
-    n    <- NROW(Qr$qr)
-    rdf  <- n - p
-    ##ind  <- !is.na(coef(z))
-    nNA  <- Qr$pivot[p1]
-    V    <- matrix(NA, length(Qr$pivot), length(Qr$pivot))
-    R    <- chol2inv(Qr$qr[p1, p1, drop = FALSE]) ## solve(X'X)
-    w    <- if(is.null(z$weights)) rep(1,n) else z$weights
-    r    <- z$residuals
-    if(!iscluster) {
-        if(type=="const") {
-                rss  <- sum(w * r^2)
-                Vout <- R*rss/rdf
-        } else {
-            if(type!="HAC") {
-                meat.  <- meatHC(object, type = type, ...)            
-                meat.  <- meat.[nNA, nNA]
-                bread. <- bread(object, type = type, ...)
-                Vout   <- (1/nrow(estfun(object)))*(bread. %*% meat. %*% bread.)
-            }
-            else {
-                Vout <- vcovHAC(object,  ...)
-            }
-        }
+  type <- match.arg(type)    
+  iscluster <- !is.null(object$cluster)
+  if(type=="const")
+    iscluster <- FALSE
+  z <- object
+  Qr <- z$qr    
+  if (is.null(z$terms) || is.null(Qr))
+    stop("invalid \'lm\' object:  no 'terms' nor 'qr' component")
+  p    <- z$rank
+  p1   <- 1:p
+  n    <- NROW(Qr$qr)
+  rdf  <- n - p
+  ##ind  <- !is.na(coef(z))
+  nNA  <- Qr$pivot[p1]
+  V    <- matrix(NA, length(Qr$pivot), length(Qr$pivot))
+  R    <- chol2inv(Qr$qr[p1, p1, drop = FALSE]) ## solve(X'X)
+  w    <- if(is.null(z$weights)) rep(1,n) else z$weights
+  r    <- z$residuals
+  if(!iscluster) {
+    if(type=="const") {
+      rss  <- sum(w * r^2)
+      Vout <- R*rss/rdf
     } else {
-        facj   <- n/(n-p)
-        X          <- model.matrix(z)
-        cluster    <- as.factor(z$cluster)
-        nc         <- length(levels(cluster))
-        j          <- order(cluster)
-        clus.size  <- table(cluster)
-        clus.start <- c(1, 1 + cumsum(clus.size))
-        w <- w[j]
-        r <- r[j]    
-        X <- X[j, nNA, drop = FALSE]*c(sqrt(w))        
-        r <- r*sqrt(w)
-        
-        ## mr2 <- function() {
-        ##     res <- NULL
-        ##     for (jj in 1:nc) {
-        ##         ind   <- clus.start[jj]+ (0:(clus.size[jj]-1)) 
-        ##         Xi    <- X[ind,,drop=FALSE]
-        ##         Hgg   <- chol(diag(length(ind))-Xi%*%R%*%t(Xi), pivot = TRUE)
-        ##         pivot <- attr(Hgg, "pivot")
-        ##         oo    <- order(pivot)
-        ##         Hgg   <- Hgg[,oo]
-        ##         res   <- c(res, solve(Hgg)%*%r[ind])
-        ##     }
-        ##     res
-        ## }
-        
-        ## mr3 <- function() {
-        ##     res <- NULL
-        ##     for (jj in 1:nc) {
-        ##         ind <- clus.start[jj]+ (0:(clus.size[jj]-1)) 
-        ##         Xi  <- X[ind,,drop=FALSE]
-        ##         Hgg <- solve(diag(length(ind))-Xi%*%R%*% t(Xi))
-        ##         res <- c(res, Hgg%*%r[ind])
-        ##     }
-        ##     sqrt((nc-1)/nc)*res
-        ## }
-        
-        res <- switch(EXPR = type,                       
-                      HC2 = .Call("resHC2", X, r, R, clus.start, clus.size, PACKAGE = "grpack"),
-                      HC3 = .Call("resHC3", X, r, R, clus.start, clus.size, PACKAGE = "grpack"),
-                      sqrt((n-1)/(n-p) * nc/(nc-1))*r
-                      )
-        
-        score <- X*c(res)
-        clus.start <- clus.start[-(nc + 1)]
-        storage.mode(clus.start) <- "integer"
-        sp <- p
-        W <- matrix(
-                    .Fortran("robcovf", n, sp, nc, clus.start, clus.size, 
-                             score, double(sp), double(sp * sp), w = double(sp * sp),
-                             PACKAGE = "grpack")$w, nrow = sp)
-        Vout <- R%*%W%*%t(R)
-    }
-    V[nNA, nNA] <- Vout
-    colnames(V) <- rownames(V) <- names(coef(object))
-    V
-}
-
-
-coeftestdefault <- function (x, vcov. = NULL, df = NULL, ...) 
-{
-    est <- coef(x)
-    if (is.null(vcov.)) 
-        se <- vcov(x)
-    else {
-        if (is.function(vcov.)) 
-            se <- vcov.(x)
-        else se <- vcov.
-    }
-    se <- sqrt(diag(se))
-    if (!is.null(names(est)) && !is.null(names(se))) {
-        anames <- names(est)[names(est) %in% names(se)]
-        est <- est[anames]
-        se <- se[anames]
-    }
-    tval <- as.vector(est)/se
-    if (is.null(df)) {
-      if(!is.null(x$clusterby)) {
-        rdf = length(unique(x$cluster))-1
-      } else {
-        rdf <- x$df.residual    
+      if(type!="HAC") {
+        meat.  <- meatHC(object, type = type, ...)            
+        meat.  <- meat.[nNA, nNA]
+        bread. <- bread(object, type = type, ...)
+        Vout   <- (1/nrow(estfun(object)))*(bread. %*% meat. %*% bread.)
+      }
+      else {
+        Vout <- vcovHAC(object,  ...)
       }
     }
+  } else {
+    facj   <- n/(n-p)
+    X          <- model.matrix(z)
+    cluster    <- as.factor(z$cluster)
+    nc         <- length(levels(cluster))
+    j          <- order(cluster)
+    clus.size  <- table(cluster)
+    clus.start <- c(1, 1 + cumsum(clus.size))
+    w <- w[j]
+    r <- r[j]    
+    X <- X[j, nNA, drop = FALSE]*c(sqrt(w))        
+    r <- r*sqrt(w)
     
-    if (df > 0) {
-      pval <- 2 * pt(abs(tval), df = df, lower.tail = FALSE)
-      cnames <- c("Estimate", "Std. Error", "t value", "Pr(>|t|)")
-      mthd <-ifelse(is.finite(df), "t", "z")
-    }
-    else {
-      stop('df must >0')
-    }
-    rval <- cbind(est, se, tval, pval)
-    colnames(rval) <- cnames
-    class(rval) <- "coeftest"
-    attr(rval, "method") <- paste(mthd, "test of coefficients")
-    attr(rval, "df") <- df
-    return(rval)
+    ## mr2 <- function() {
+    ##     res <- NULL
+    ##     for (jj in 1:nc) {
+    ##         ind   <- clus.start[jj]+ (0:(clus.size[jj]-1)) 
+    ##         Xi    <- X[ind,,drop=FALSE]
+    ##         Hgg   <- chol(diag(length(ind))-Xi%*%R%*%t(Xi), pivot = TRUE)
+    ##         pivot <- attr(Hgg, "pivot")
+    ##         oo    <- order(pivot)
+    ##         Hgg   <- Hgg[,oo]
+    ##         res   <- c(res, solve(Hgg)%*%r[ind])
+    ##     }
+    ##     res
+    ## }
+    
+    ## mr3 <- function() {
+    ##     res <- NULL
+    ##     for (jj in 1:nc) {
+    ##         ind <- clus.start[jj]+ (0:(clus.size[jj]-1)) 
+    ##         Xi  <- X[ind,,drop=FALSE]
+    ##         Hgg <- solve(diag(length(ind))-Xi%*%R%*% t(Xi))
+    ##         res <- c(res, Hgg%*%r[ind])
+    ##     }
+    ##     sqrt((nc-1)/nc)*res
+    ## }
+    
+    res <- switch(EXPR = type,                       
+                  HC2 = .Call("resHC2", X, r, R, clus.start, clus.size, PACKAGE = "grpack"),
+                  HC3 = .Call("resHC3", X, r, R, clus.start, clus.size, PACKAGE = "grpack"),
+                  sqrt((n-1)/(n-p) * nc/(nc-1))*r
+    )
+    
+    score <- X*c(res)
+    clus.start <- clus.start[-(nc + 1)]
+    storage.mode(clus.start) <- "integer"
+    sp <- p
+    W <- matrix(
+      .Fortran("robcovf", n, sp, nc, clus.start, clus.size, 
+               score, double(sp), double(sp * sp), w = double(sp * sp),
+               PACKAGE = "grpack")$w, nrow = sp)
+    Vout <- R%*%W%*%t(R)
+  }
+  V[nNA, nNA] <- Vout
+  colnames(V) <- rownames(V) <- names(coef(object))
+  V
 }
 
-##' \code{coef} is a method  for performing z and (quasi-)t
+coeftestdefault <- function (x, vcov. = NULL, df = NULL, ...) {
+  est <- coef(x)
+  if (is.null(vcov.)) 
+    se <- vcov(x)
+  else {
+    if (is.function(vcov.)) 
+      se <- vcov.(x)
+    else se <- vcov.
+  }
+  se <- sqrt(diag(se))
+  if (!is.null(names(est)) && !is.null(names(se))) {
+    anames <- names(est)[names(est) %in% names(se)]
+    est <- est[anames]
+    se <- se[anames]
+  }
+  tval <- as.vector(est)/se
+  if (is.null(df)) {
+    if(!is.null(x$clusterby)) {
+      rdf = length(unique(x$cluster))-1
+    } else {
+      rdf <- x$df.residual    
+    }
+  }
+  
+  if (df > 0) {
+    pval <- 2 * pt(abs(tval), df = df, lower.tail = FALSE)
+    cnames <- c("Estimate", "Std. Error", "t value", "Pr(>|t|)")
+    mthd <-ifelse(is.finite(df), "t", "z")
+  }
+  else {
+    stop('df must >0')
+  }
+  rval <- cbind(est, se, tval, pval)
+  colnames(rval) <- cnames
+  class(rval) <- "coeftest"
+  attr(rval, "method") <- paste(mthd, "test of coefficients")
+  attr(rval, "df") <- df
+  return(rval)
+}
+
+##' \code{coeftest} is a method  for performing z and (quasi-)t
 ##' tests of estimated coefficients through \code{reg}
 ##'
 ##' Details
@@ -491,25 +493,25 @@ coeftestdefault <- function (x, vcov. = NULL, df = NULL, ...)
 ##' @S3method coeftest reg
 ##' @export
 coeftest.reg <- function(x, vcov.=c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"), df = NULL) {
-    vcov. <- match.arg(vcov.)
-    b <- coef(x)
-    cluster <- FALSE
-    
-    if(is.null(df) & !is.null(x$clusterby)) {
-        df <- length(unique(x$cluster))-1
-        cluster <- TRUE
-    } else {
-      if(is.null(df)){
-        df <- x$df.residual
-      }
-    }   
-    cov <- vcov(x, type = vcov.)
-    rval <- coeftestdefault(x, vcov.=cov, df = df)                    
-    attr(rval, "vcov") <- vcov
-    attr(rval, "df") <- df
-    attr(rval, "cluster") <- cluster
-    class(rval) <- c("coeftest.reg", "coeftest")
-    return(rval)
+  vcov. <- match.arg(vcov.)
+  b <- coef(x)
+  cluster <- FALSE
+  
+  if(is.null(df) & !is.null(x$clusterby)) {
+    df <- length(unique(x$cluster))-1
+    cluster <- TRUE
+  } else {
+    if(is.null(df)){
+      df <- x$df.residual
+    }
+  }   
+  cov <- vcov(x, type = vcov.)
+  rval <- coeftestdefault(x, vcov.=cov, df = df)                    
+  attr(rval, "vcov") <- vcov
+  attr(rval, "df") <- df
+  attr(rval, "cluster") <- cluster
+  class(rval) <- c("coeftest.reg", "coeftest")
+  return(rval)
 }
 
 ##' @S3method print coeftest.reg
@@ -518,9 +520,9 @@ print.coeftest.reg <- function(x, ...)
   mthd <- attr(x, "method")
   if(is.null(mthd)) mthd <- "Test of coefficients"
   if(is.finite(df <- attr(x, "df")))
-      cat(paste("\n", mthd," with ",df, " df:\n\n", sep = ""))
+    cat(paste("\n", mthd," with ",df, " df:\n\n", sep = ""))
   else
-      cat(paste("\n", mthd,":\n\n", sep = ""))
+    cat(paste("\n", mthd,":\n\n", sep = ""))
   printCoefmat(x, ...)
   cat("\n")
   invisible(x)
@@ -531,31 +533,31 @@ print.coeftest.reg <- function(x, ...)
 confint.reg <- function (object, parm, level = 0.95,
                          vcov. = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"), df=NULL, ...) 
 {
-    ## ... other argument passsed down to vcov.reg (for instance when type is HAC)
-    type <- match.arg(vcov.)
-    cf <- coef(object)
-    pnames <- names(cf)
-    if (missing(parm)) 
-        parm <- pnames
-    else if (is.numeric(parm)) 
-        parm <- pnames[parm]
-    a <- (1 - level)/2
-    a <- c(a, 1 - a)
-    if(is.null(df)) {
-      if(!is.null(object$clusterby)) {
-        rdf <- length(unique(object$cluster))-1
-      } else {
-        rdf <- object$df.residual
-      }  
-    }
+  ## ... other argument passsed down to vcov.reg (for instance when type is HAC)
+  type <- match.arg(vcov.)
+  cf <- coef(object)
+  pnames <- names(cf)
+  if (missing(parm)) 
+    parm <- pnames
+  else if (is.numeric(parm)) 
+    parm <- pnames[parm]
+  a <- (1 - level)/2
+  a <- c(a, 1 - a)
+  if(is.null(df)) {
+    if(!is.null(object$clusterby)) {
+      rdf <- length(unique(object$cluster))-1
+    } else {
+      rdf <- object$df.residual
+    }  
+  }
   
-    pct <- format.perc(a, 3)
-    fac <- qt(a, df = rdf)
-    ci <- array(NA, dim = c(length(parm), 2L), dimnames = list(parm, 
-                                               pct))
-    ses <- sqrt(diag(vcov(object, type = type, ...)))[parm]
-    ci[] <- cf[parm] + ses %o% fac
-    ci
+  pct <- format.perc(a, 3)
+  fac <- qt(a, df = rdf)
+  ci <- array(NA, dim = c(length(parm), 2L), dimnames = list(parm, 
+                                                             pct))
+  ses <- sqrt(diag(vcov(object, type = type, ...)))[parm]
+  ci[] <- cf[parm] + ses %o% fac
+  ci
 }
 
 ## geboot.reg <- function(object, sim = 999, wbweights = c('radamacher', 'exp', 'mn1','mn2'), ...)
@@ -622,7 +624,7 @@ confint.reg <- function (object, parm, level = 0.95,
 ##                        ww <- 1+(delta1+rnorm(nc)/sqrt(2))*(delta2+rnorm(nc)/sqrt(2))-delta1*delta2
 ##                        rep(ww + 1 - sum(ww)/length(ww), clus.size)
 ##                    })
-    
+
 ##     for(j in 1:sim)
 ##     {
 ##         ww <- wbwf()
@@ -644,7 +646,7 @@ confint.reg <- function (object, parm, level = 0.95,
 ##     ans <- list(boot.coef = out[,1:p], ses = out[,(p+1):(2*p)])
 ##     colnames(ans$boot.coef) <- rownames(betahat)
 ##     colnames(ans$ses) <- rownames(betahat)
-    
+
 ##     ans$lm.full <- object
 ##     ##    ans$lm.restricted <- rr
 ##     ans$coef <- betahat
@@ -686,7 +688,7 @@ confint.reg <- function (object, parm, level = 0.95,
 ##         lim <- c(min(rbb[1], rb[1]), max(rbb[2], rb[2])) 
 ##         xx <- seq(lim[1],lim[2], len = 100)
 ##         yy <- dnorm(xx,mean = cb, sd = sb)
-        
+
 ##         hist(bbp, xlab = names(coef(z$lm.full))[wr],
 ##              main = 'Wild Bootstrap Coefficient',
 ##              probability = TRUE, ylim = c(0, max(yy)), xlim = lim)
@@ -778,7 +780,7 @@ confint.reg <- function (object, parm, level = 0.95,
 ##     cat('Unrestricted OLS\n')
 ##     lmf <- summary(z$lm.full)
 ##     print(lmf)
-        
+
 ##     cat('\nNull Hypothesis: ')
 ##     cat(' ', names(z$restrictions), ' = ', z$restrictions[[1]], '\n\n')
 ##     cat(' Wild Boot  p-value:' , format.pval(z$pvalue),
@@ -791,14 +793,14 @@ confint.reg <- function (object, parm, level = 0.95,
 ##                cutpoints = c(0, 0.001, 0.01, 0.05, 0.1, 1), 
 ##                symbols = c("***", "**", "*", ".", " ")), '\n\n')
 ## }
-    
+
 
 ## print.summary.geboot <- function(z, ...)
 ## {
 ##     cat('Unrestricted OLS\n')
 ##     lmf <- summary(z$lm.full)
 ##     print(lmf)
-        
+
 ##     cat('\nNull Hypothesis: ')
 ##     cat(' ', names(z$restrictions), ' = ', z$restrictions[[1]], '\n\n')
 ##     cat(' Wild Boot  p-value:' , format.pval(z$pvalue),
@@ -811,4 +813,4 @@ confint.reg <- function (object, parm, level = 0.95,
 ##                cutpoints = c(0, 0.001, 0.01, 0.05, 0.1, 1), 
 ##                symbols = c("***", "**", "*", ".", " ")), '\n\n')
 ## }
-    
+

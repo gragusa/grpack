@@ -15,14 +15,16 @@
   finite positive number a t test with df degrees of
   freedom is performed. In all other cases, a z test (using
   a normal approximation) is performed. If the \code{reg}
-  has a \code{cluster} component and \df} is \code{NULL} a
-  t test with G-1 degrees of freedom is performed.}
+  object has a \code{cluster} component and df is
+  \code{NULL} a t test with G-1 degrees of freedom is
+  performed.}
 
   \item{...}{other arguments}
 }
 \description{
-  coef is a method for performing z and (quasi-)t tests of
-  estimated coefficients through \code{reg}
+  \code{coeftest} is a method for performing z and
+  (quasi-)t tests of estimated coefficients through
+  \code{reg}
 }
 \details{
   Details

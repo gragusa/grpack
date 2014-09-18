@@ -1,8 +1,9 @@
 ##' Exactly like latex of \code{Hmisc}, but fix a bug when using
-##' \code{ctable=TRUE} and add three arguments: \cod{do.begin},
+##' \code{ctable=TRUE} and add three arguments: \code{do.begin},
 ##' \code{do.end}, \code{tight}. 
 ##'
-##' .. content for \details{} ..
+##' Details here
+##' 
 ##' @title Latex tables.
 ##' @param do.begin Should the latex code at the beginning of table be printed?
 ##' @param do.end Should the latex code at the end of table be printed?
@@ -10,8 +11,9 @@
 ##' @param rowcolors This command is useful for inserting color command. For
 ##' instance, if \code{rowcolors=rowcolors{1}{green}{pink}}, then the rows are 
 ##' subsequently coloured in green and in pink. 
-##' @return See \code{\link{latex}} of package \cod{Hmisc}.
+##' @return See \code{\link{latex}} of package \code{Hmisc}.
 ##' @author Giuseppe Ragusa
+##' 
 ##' @export
 latex2 <-
   function(object,

@@ -52,7 +52,12 @@ rndCGM <- function( alpha = 0, beta = 1, sdalpha = 1, sdepsilon = 1,
         else
             Zig <- apply(as.matrix(1:ninst), 1,
                          function(x) rep(rnorm(S, mean = 0, sd = sdalpha), each = Ns))
-        Xig <- Zig%*%rep(gamma,nins) + uig
+        if(errordist == 1)
+          nug <- rep(rnorm(S, mean = 0, sd = sdalpha), each = Ns)
+        else
+          nug <- rep(sqrt(sdalpha)*(rchisq(S, df=1)-1)/sqrt(2), each = Ns)    
+        
+        Xig <- Zig%*%rep(gamma,nins) + uig + nug
     }
     
     yis <- alpha+beta*((Xg+Xig)/scale)+eig+ag
@@ -61,7 +66,6 @@ rndCGM <- function( alpha = 0, beta = 1, sdalpha = 1, sdepsilon = 1,
     else
         data.frame(y = yis, X = (Xig+Xg)/scale, cluster = rep(1:S,each = Ns))
 }
-
 
 rndCGM2 <- function( sdalpha = 1, k = 5, nclusters = 5, nsubjects = 50, 
                     gamma = c(1,.025,1,0) )

@@ -41,13 +41,10 @@
   \code{method = "model.frame"} returns the model frame
   (the same as with \code{model = TRUE}, see below).}
 
-  \item{model}{}
-
-  \item{x}{}
-
-  \item{y}{}
-
-  \item{qr}{}
+  \item{model,}{y, x, qr logical.  logicals.  If ‘TRUE’ the
+  corresponding components of the fit (the model frame, the
+  model matrix, the response, the QR decomposition) are
+  returned.}
 
   \item{singular.ok}{logical. If FALSE (the default in S
   but not in R) a singular fit is an error.}

@@ -30,7 +30,7 @@
     center = c("center", "centering", "none"),
     landscape = FALSE, multicol = TRUE,
     math.row.names = TRUE, math.col.names = FALSE,
-    rowcolors = NULL)
+    rowcolors = NULL, dec = 3)
 }
 \arguments{
   \item{...}{the statistical models.}
@@ -112,8 +112,8 @@
   output to an existing file.}
 
   \item{label}{a text string representing a symbolic label
-  for the table for referencing in the LaTeX \code{\label}
-  and \code{\ref} commands. \code{label} is only used if
+  for the table for referencing in the LaTeX \code{\\label}
+  and \code{\\ref} commands. \code{label} is only used if
   caption is given.}
 
   \item{rowlabel}{}

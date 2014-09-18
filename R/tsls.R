@@ -1,12 +1,3 @@
-##################################################################
-## tsls.R /
-## Author: Giuseppe Ragusa 
-## Time-stamp: "2012-01-19 13:30:17 gragusa" 
-##
-## Description:
-##################################################################
-
-
 
 ##' @export
 tsls2 <- function (y, X, Z, names=NULL, weights,
@@ -31,6 +22,10 @@ tsls2 <- function (y, X, Z, names=NULL, weights,
   A <- V %*% XtZ %*% invZtZ
   b <- A %*% crossprod(D%*%Z, y)
   residuals <- (y - X %*% b)
+  
+  
+  
+  
   ##   if(is.null(cluster))
   ##     V <- A %*% crossprod(D%*%Z*c(residuals)) %*% t(A)
   ##   else {
@@ -207,10 +202,9 @@ summary.ivreg <- function(object, digits = 4, ...) {
     save.digits <- unlist(options(digits = digits))
     on.exit(options(digits = save.digits))
     cat("\n 2SLS Estimates (Robust Var)\n")
-    if(!is.null(AC <- attr(object$vcov,'cluster')))
-      {
+    if(!is.null(AC <- attr(object$vcov,'cluster'))) {
           cat("\nNumber of cluster (", AC$name, "): ", AC$nclus,"\n")
-      }
+    }
     cat("\nModel Formula: ")
     print(object$formula)
     cat("\nInstruments: ")
@@ -270,7 +264,7 @@ se.md <- function(x, vcov. = 'wr')
 vcov.ivreg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "HC3", "HC4", "HC4m", "HC5", "HAC"), ...)
 {
     z <- object
-    hc <- match.arg(hc)
+    hc <- match.arg(type)
     iscluster <- !is.null(z$cluster)
     if(iscluster & hc == 'HC1')
         hc = 'HC'
@@ -344,11 +338,11 @@ vcov.ivreg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "HC
     
     if(!iscluster)
         V <- switch(hc,
-                    iid = {
+                    const = {
                         rss <- sum(r^2)
                         resvar <- rss/(n-p)
-                        V <- A * resvar
-                        se <- sqrt(diag(V))},
+                        A * resvar
+                        },
                     HC = R%*%crossprod(Z*r)%*%t(R),
                     HC1 = n/(n-k)*R%*%crossprod(Z*c(r))%*%t(R),
                     HC2 = {

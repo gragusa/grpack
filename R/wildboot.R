@@ -1,15 +1,25 @@
 ##' Wild Bootstrap for regression model.
 ##'
-##' Calculate several wild bootstrapped quantities.
+##' Calculate several wild bootstrapped t-statistics.
 ##' 
 ##' @title wildboot
-##' @param x an object
+##' @param a suitable regression object
+##' @param reps number of bootstrap replications
+##' @param null a named list containing the null hypothesis
+##' @param type type of weighting (see details)
 ##' @param ... other arguments
-##' @return A list with several components
+##' @return An object of class \code{wild.reg}
+##' @examples
+##' data(CASchools)
+##' CASchools <- transform(CASchools, testscore=(math+read)/2, str = students/teachers)
+##' 
+##' 
+##' lm1 <- reg(testscore~str, cluster=county, data = CASchools)
+##' wb1 <- wildboot(lm1, null = list(str=0))
 ##' @rdname wildboot
 ##' @author Giuseppe Ragusa
 ##' @export
-wildboot <- function(x, ...)
+wildboot <- function(object, ...)
     UseMethod('wildboot')
 
 ##' @method wildboot reg
@@ -17,86 +27,79 @@ wildboot <- function(x, ...)
 ##' @return \code{NULL}
 ##' @rdname wildboot
 ##' @export
-wildboot.reg <- function(obj, reps=999, null, 
-                         type = c('radamacher', 'mtp', 'mn1', 'mn2'))
+wildboot.reg <- function(object, reps=999, null, 
+                         type = c('radamacher', 'mtp', 'mn1', 'mn2'), ...)
 {
-
-    ## null is a list
-    ## for example reg(y~x)
-    ## null = list(x=0)
-    ## means we are testing whether
-    ## the coefficient of x is 0
-    ## if null is NULL
-    ## then look whether
-    ## t is a vector of dimension k
-    ## t0 is numeric null hypothesis
-    ## such that
-    ## H_0: t%*%beta = t0
-    ## In this case, the wildbootstrap does
-    ## not impose the null
-    types  <- c('radamacher', 'mtp', 'mn1', 'mn2')
-    wbtype <- match.arg(type)
-    wbtype <- switch(wbtype,
-                     radamacher = 1,
-                     mtp        = 2,
-                     mn1        = 3,
-                     mn2        = 4)
-    
-    z   <- obj
-    y   <- z$model[[1]]
-    X   <- model.matrix(z)
-    b   <- coef(z)
-    w   <- weights(z)
-    n   <- length(y)
-    k   <- ncol(X)
-    r   <- residuals(z) 
-
-    p <- z$rank    
-    R <- chol2inv(z$qr$qr[1:p, 1:p, drop = FALSE])
-
-    if(is.null(w))
-        w <- rep(1, n)
-
-    y <- y*sqrt(w)
-    X <- X*c(sqrt(w))
-    r <- r*sqrt(w)
-    
-    if(missing(null))
-        stop("'null' is missing")
-
-    if(!is.list(null))
-        stop("'null' must be a list")
-    ## Check null hypthesis        
-    tmp    <- match(names(null), names(b), nomatch = NA)
-    if(all(is.na(tmp))) {
-        stop("'null' not defined properly")
-    } else {
-        wr     <- na.omit(tmp)[1]
-        null   <- unlist(null)[1]   ## Null hypothesis
-    }
-    
-    if(!is.null(z$cluster)) {
-        cluster <- as.factor(z$cluster)
-        j <- order(cluster)
-        clus.size <- table(cluster)
-        clus.start <- c(1, 1 + cumsum(clus.size))
-        storage.mode(clus.start) <- "integer"
-        nc <- length(levels(cluster))
-        X <- X[j, , drop = FALSE]
-        y <- y[j]
-        clus.start <- clus.start[-(nc + 1)]        
-    } else {
-        nc <- 1
-        clus.start <- c(1,n)
-        clus.size <- c(n)
-        fcl <- 1
-    }    
-    reps <- ceiling(reps)
-
-
-    ## H0 Imposed
-
-    ## Calculate beta_restricted and u_restricted
+  ## null is a list
+  ## for example reg(y~x)
+  ## null = list(x=0)
+  ## means we are testing whether
+  ## the coefficient of x is 0
+  ## if null is NULL
+  ## not impose the null 
+  types  <- c('radamacher', 'mtp', 'mn1', 'mn2')
+  wbtype <- match.arg(type)
+  wbtype <- switch(wbtype,
+                   radamacher = 1,
+                   mtp        = 2,
+                   mn1        = 3,
+                   mn2        = 4)
+  
+  z   <- object
+  y   <- z$model[[1]]
+  X   <- model.matrix(z)
+  b   <- coef(z)
+  w   <- weights(z)
+  n   <- length(y)
+  k   <- ncol(X)
+  r   <- residuals(z) 
+  
+  p <- z$rank    
+  R <- chol2inv(z$qr$qr[1:p, 1:p, drop = FALSE])
+  
+  if(is.null(w))
+    w <- rep(1, n)
+  
+  y <- y*sqrt(w)
+  X <- X*c(sqrt(w))
+  r <- r*sqrt(w)
+  
+  if(missing(null))
+    stop("'null' is missing")
+  
+  if(!is.list(null))
+    stop("'null' must be a list")
+  ## Check null hypthesis        
+  tmp    <- match(names(null), names(b), nomatch = NA)
+  if(all(is.na(tmp))) {
+    stop("'null' not defined properly")
+  } else {
+    wr     <- na.omit(tmp)[1]
+    null   <- unlist(null)[1]   ## Null hypothesis
+  }
+  
+  if(!is.null(z$cluster)) {
+    cluster <- as.factor(z$cluster)
+    j <- order(cluster)
+    clus.size <- table(cluster)
+    clus.start <- c(1, 1 + cumsum(clus.size))
+    storage.mode(clus.start) <- "integer"
+    nc <- length(levels(cluster))
+    X <- X[j, , drop = FALSE]
+    y <- y[j]
+    clus.start <- clus.start[-(nc + 1)]        
+  } else {
+    nc <- 1
+    clus.start <- c(1,n)
+    clus.size <- c(n)
+    fcl <- 1
+  }    
+  reps <- ceiling(reps)
+  
+  
+  ## H0 Imposed
+  
+  ## Calculate beta_restricted and u_restricted
     yr  <- y-X[, wr, drop = FALSE]%*%null
     Xr  <- X[, -wr, drop = FALSE]
     br0 <- solve(crossprod(Xr), crossprod(Xr, yr)) ## this is ((k-1) x 1)
@@ -104,7 +107,8 @@ wildboot.reg <- function(obj, reps=999, null,
     br  <- rep(null, k)
     br[wr] <- null
     br[-wr] <- br0
-    out <- .Call("wb_null", X, R, y, br, Ur, clus.start, clus.size, reps, wbtype, PACKAGE="grpack")
+    out <- .Call("wb_null", X, R, y, br, Ur, 
+                 clus.start, clus.size, reps, wbtype, PACKAGE="grpack")
      
     coef.wb0            <- out$coef_wb[,wr]
     serr.wb0.HC1        <- out$sd_wb_HC1[,wr]
@@ -122,13 +126,15 @@ wildboot.reg <- function(obj, reps=999, null,
     tstat0.se  <- (coef.wb0 - null)/sd(coef.wb0)
     
     ## Do the unconstrained wildbootstrap
-    out <- .Call("wb_null", X, R, y, b, r, clus.start, clus.size, reps, wbtype, PACKAGE="grpack")
-    coef.wb            <- out$coef_wb[,wr]
-    serr.wb.HC1        <- out$sd_wb_HC1[,wr]
-    serr.wb.HC2        <- out$sd_wb_HC2[,wr]
-    serr.wb.HC3        <- out$sd_wb_HC3[,wr]
+    out <- .Call("wb_null", X, R, y, b, r, clus.start, 
+                 clus.size, reps, wbtype, PACKAGE="grpack")
+  
+    coef.wb     <- out$coef_wb[,wr]
+    serr.wb.HC1 <- out$sd_wb_HC1[,wr]
+    serr.wb.HC2 <- out$sd_wb_HC2[,wr]
+    serr.wb.HC3 <- out$sd_wb_HC3[,wr]
     
-    names(coef.wb) <- names(b)[wr]
+    names(coef.wb)     <- names(b)[wr]
     names(serr.wb.HC1) <- names(b)[wr]
     names(serr.wb.HC2) <- names(b)[wr]
     names(serr.wb.HC3) <- names(b)[wr]
@@ -140,28 +146,24 @@ wildboot.reg <- function(obj, reps=999, null,
 
     tstat <- list(HC1 = tstat.HC1, HC2 = tstat.HC2, HC3 = tstat.HC3, se = tstat.se)
     tstat0 <- list(HC1 = tstat0.HC1, HC2 = tstat0.HC2, HC3 = tstat0.HC3, se = tstat0.se)
-
-    obj$coef.wb       <- coef.wb        ## reps x 1
-    obj$coef.wb0      <- coef.wb0       ## reps x 1
-
-    obj$se.wb.HC1  <- serr.wb.HC1
-    obj$se.wb.HC2  <- serr.wb.HC2
-    obj$se.wb.HC3  <- serr.wb.HC3
-
-    obj$se.wb0.HC1 <- serr.wb0.HC1
-    obj$se.wb0.HC2 <- serr.wb0.HC2
-    obj$se.wb0.HC3 <- serr.wb0.HC3
-
-    obj$tstat0 <- tstat0
-    obj$tstat  <- tstat
-    
-    obj$null         <- null         
-    obj$reps         <- reps         
-    obj$distr        <- types[wbtype]
-    class(obj)       <- c("reg.wb", class(obj))
-    obj$nc           <- nc
-    obj$wr           <- wr
-    obj
+    out <- object
+    out$coef.wb    <- coef.wb        ## reps x 1
+    out$coef.wb0   <- coef.wb0       ## reps x 1
+    out$se.wb.HC1  <- serr.wb.HC1
+    out$se.wb.HC2  <- serr.wb.HC2
+    out$se.wb.HC3  <- serr.wb.HC3
+    out$se.wb0.HC1 <- serr.wb0.HC1
+    out$se.wb0.HC2 <- serr.wb0.HC2
+    out$se.wb0.HC3 <- serr.wb0.HC3
+    out$tstat0     <- tstat0
+    out$tstat      <- tstat    
+    out$null       <- null         
+    out$reps       <- reps         
+    out$distr      <- types[wbtype]
+    class(out)     <- c("reg.wb", class(object))
+    out$nc         <- nc
+    out$wr         <- wr
+    return(out)
 }
 
 ##' @method print reg.wb
@@ -185,26 +187,26 @@ print.reg.wb <- function(x, ...) {
 
 ##' @method summary reg.wb
 ##' @S3method summary reg.wb
-summary.reg.wb <- function(x, vcov. = "HC3", ...) {
-    b  <- coef(x)
-    se <- sqrt(diag(vcov(x, type = vcov.)))
+summary.reg.wb <- function(object, vcov. = "HC3", ...) {
+    b  <- coef(object)
+    se <- sqrt(diag(vcov(object, type = vcov.)))
     
-    h0 <- unlist(x$null)
+    h0 <- unlist(object$null)
     tstat <- (b-h0)/se
 
-    ats <- abs(tstat[x$wr])
+    ats <- abs(tstat[object$wr])
     
-    edf3 <- ecdf(x$tstat[[vcov.]])
+    edf3 <- ecdf(object$tstat[[vcov.]])
     pv <- edf3(-abs(ats))+(1-edf3(abs(ats)))    
         
-    edf3 <- ecdf(x$tstat0[[vcov.]])
+    edf3 <- ecdf(object$tstat0[[vcov.]])
     pv0 <- edf3(-abs(ats))+(1-edf3(abs(ats)))
     
-    out <-  x
+    out <-  object
     out$pv0 <-  pv0
     out$pv  <-  pv
     out$vcov. <- vcov.
-    class(out) <- c('summary.reg.wb', class(x))
+    class(out) <- c('summary.reg.wb', class(object))
     out
 }
 
@@ -223,16 +225,18 @@ print.summary.reg.wb <- function(x, digits = max(3, getOption("digits") - 3), ..
     cat('Null hypotheses:\n')
     cat('', names(x$null), ' = ', x$null, '\n')
     cat('\n')
-    cat(' p-value (with Null imposed):', format.pval(x$pv0),
+    
+    cat(' p-value (under H0):', format.pval(x$pv0),
         symnum(x$pv0, corr = FALSE, na = FALSE, 
                cutpoints = c(0, 0.01, 0.05, 0.1, 1), 
                symbols = c("***", "**", "*", " ")), '\n')
-
-    cat(' p-value (no null imposed):', format.pval(x$pv),
+    
+    cat(' p-value:', format.pval(x$pv),
         symnum(x$pv, corr = FALSE, na = FALSE, 
                cutpoints = c(0, 0.01, 0.05, 0.1, 1), 
                symbols = c("***", "**", "*", " ")), '\n')
 
+      
     cat("\n ---\n Signif. codes: '***' 0.01 '**' 0.05 '*' 0.1  \n")
     cat(" Variance type:", x$vcov., '\n')
 }

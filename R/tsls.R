@@ -1,4 +1,5 @@
 
+
 ##' @export
 tsls2 <- function (y, X, Z, names=NULL, weights,
                    cluster=NULL, ...) {
@@ -8,24 +9,26 @@ tsls2 <- function (y, X, Z, names=NULL, weights,
     rep.weights <- FALSE
     weights <- rep(1,n) }
   else {
-      if(!is.null(weights) && !is.numeric(weights) ) 
+      if(!is.null(weights) && !is.numeric(weights) )
         stop("'weights' must be a numeric vector")
       if(length(weights)!=n)
         stop("'weights' not of right length")
       rep.weights <- TRUE
   }
   w <- weights/sum(weights)*n
-  D <- diag(w)
-  invZtZ <- solve(crossprod(D%*%Z,Z))
-  XtZ <- crossprod(D%*%X, Z)
+  D <- Diagonal(x=w)
+  DZ <- as.matrix(D%*%Z)
+  DX <- as.matrix(D%*%X)
+  invZtZ <- solve(crossprod(DZ,Z))
+  XtZ <- crossprod(DX, Z)
   V <- solve(XtZ %*% invZtZ %*% t(XtZ))
   A <- V %*% XtZ %*% invZtZ
-  b <- A %*% crossprod(D%*%Z, y)
+  b <- A %*% crossprod(DZ, y)
   residuals <- (y - X %*% b)
-  
-  
-  
-  
+
+
+
+
   ##   if(is.null(cluster))
   ##     V <- A %*% crossprod(D%*%Z*c(residuals)) %*% t(A)
   ##   else {
@@ -39,11 +42,11 @@ tsls2 <- function (y, X, Z, names=NULL, weights,
   ##     clus.start <- clus.start[-(nc + 1)]
   ##     storage.mode(clus.start) <- "integer"
   ##     sp <- NCOL(score)
-  ##     W <- matrix(if (TRUE) 
-  ##         .Fortran("robcovf", n, sp, nc, clus.start, clus.size, 
+  ##     W <- matrix(if (TRUE)
+  ##         .Fortran("robcovf", n, sp, nc, clus.start, clus.size,
   ##             score, double(sp), double(sp * sp), w = double(sp * sp),
   ##                  PACKAGE = "grpack")$w
-  ##     else .Fortran("robcovf", n, p, nc, clus.start, clus.size, 
+  ##     else .Fortran("robcovf", n, p, nc, clus.start, clus.size,
   ##                   X, double(p), double(p * p), w = double(p * p))$w, nrow = sp)
   ##     V <- A%*%W%*%t(A)
   ##     clus.struct <- list()
@@ -62,7 +65,7 @@ tsls2 <- function (y, X, Z, names=NULL, weights,
   result$vcov<- V
   result$residuals <- as.vector(residuals)
   result$response <- y
-  result$model.matrix <- X 
+  result$model.matrix <- X
   result$instruments <- Z
   result$cluster <- cluster
   result$s2 <- sum(residuals^2)/(n-p)
@@ -79,36 +82,36 @@ ivregdefault <- function(y, X, Z, names=colnames(X), weights,
         weights <- rep(1, length(y))
     if(any(weights)<0)
         stop('negative weights are not allowed')
-    
+
     if(missing(cluster))
         cluster <- rep(1, length(y))
-    
+
     if((length(y)!=NROW(X))|(length(y)!=NROW(Z))|(NROW(Z)!=NROW(X)))
-        stop('mismetch')
-    
+        stop('mismatch')
+
     if(NCOL(X)>NCOL(Z))
         stop('order condition is not satisfied, NCOL(X)>NCOL(Z)')
-    
+
     if(!is.function(method)&!is.character(method))
         stop("'method' is wrong")
 
     args <- list(...)
-    
-    lm <- try(lowerize(method), silent = TRUE)
-    
-    if(is.null(start) & lm != 'tsls')
+
+    method <- try(lowerize(method), silent = TRUE)
+
+    if(is.null(start) & method != 'tsls')
         start <- tsls2(y,X,Z,names=names, weights=weights, cluster = cluster)$coef
-    
-    momfiv <- function(b) 
+
+    momfiv <- function(b)
         Z*c(y-X%*%b)
-    dmomfiv <- function(b, weights = 1) 
+    dmomfiv <- function(b, weights = 1)
         crossprod(Z * c(weights), -X)
     data <- list(y = y, X = X, Z = Z)
-    
-    out <- if(is.function(method) && !is.null(method()$family)) 
+
+    out <- if(is.function(method) && !is.null(method()$family))
         mdest(momfiv, start = start,
               dmomfun = dmomfiv, weights = weights, mdfamily = method, ...)
-    else 
+    else
         switch(lowerize(method),
                tsls = tsls2(y,X,Z,names = names, weights = weights,
                cluster = cluster),
@@ -127,7 +130,7 @@ ivregdefault <- function(y, X, Z, names=colnames(X), weights,
                qt = mdest(momfiv, start = start, data = data,
                  dmomfun = dmomfiv, weights = weights, mdfamily = mdqt, ...)
              )
-}    
+}
 
 ##' Estimate IV models
 ##'
@@ -144,8 +147,8 @@ ivreg <- function (formula, instruments, data, subset, weights,
     if (missing(na.action))
         na.action <- options()$na.action
     m <- match.call(expand.dots = FALSE)
-    
-    mf <- match(c("formula", "instruments", "data", "subset", "weights", "na.action", 
+
+    mf <- match(c("formula", "instruments", "data", "subset", "weights", "na.action",
                   "contrast", "cluster"), names(m), 0L)
     m <- m[c(1L, mf)]
     m$drop.unused.levels <- TRUE
@@ -179,9 +182,11 @@ ivreg <- function (formula, instruments, data, subset, weights,
     result$terms <- attr(mf, "terms")
     if (!is.null(na.act))
         result$na.action <- na.act
-    if(!is.null(result$cluster))
-        attr(result$vcov,'cluster')$name <- as.character(match.call()['cluster'])
     class(result) <- c(class(result), 'ivreg', 'grpack')
+    if(!is.null(result$cluster)) {
+      result$vcov <- vcov(result, type = "HC1")
+      attr(result$vcov,'cluster')$name <- as.character(match.call()['cluster'])
+    }
     result
 }
 
@@ -279,14 +284,14 @@ vcov.ivreg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "HC
     n <- z$n
     if (is.null(w))
         w <- rep(1, n)
-    else 
+    else
         r <- sqrt(w) * r
     XZ <- crossprod(X,Z)
     ZZ <- crossprod(Z)
     A <- solve(XZ%*%solve(ZZ, t(XZ)))
     ZZi <- solve(ZZ)
     R <- A%*%XZ%*%ZZi
-    
+
     if(iscluster)
     {
         cluster <- as.factor(z$cluster)
@@ -318,24 +323,24 @@ vcov.ivreg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "HC
             }
             res
         }
-        
-                
+
+
         res <- switch(hc,
                       HC  = sqrt((sum(w)-1)/(sum(w)-k) * nc/(nc-1))*r,
                       HC2 = mr2(),
                       HC3 = sqrt((nc-1)/nc)*mr3())
-        
+
         score <- Z*c(res)
         clus.start <- clus.start[-(nc + 1)]
         storage.mode(clus.start) <- "integer"
         sp <- p
         W <- matrix(
-                    .Fortran("robcovf", n, sp, nc, clus.start, clus.size, 
+                    .Fortran("robcovf", n, sp, nc, clus.start, clus.size,
                              score, double(sp), double(sp * sp), w = double(sp * sp),
                              PACKAGE = "grpack")$w, nrow = sp)
         V <- R%*%W%*%t(R)
     }
-    
+
     if(!iscluster)
         V <- switch(hc,
                     const = {

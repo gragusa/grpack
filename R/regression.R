@@ -176,8 +176,8 @@ summary.reg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "H
     rdf <- z$df.residual    
   }
   
-  if(is.na(z$df.residual) || rdf != z$df.residual)
-    warning("residual degrees of freedom in object suggest this is not an \"lm\" fit")
+#   if(is.na(z$df.residual) || rdf != z$df.residual)
+#     warning("residual degrees of freedom in object suggest this is not an \"lm\" fit")
   p1 <- 1:p
   ## do not want missing values substituted here
   r <- z$residuals
@@ -199,8 +199,8 @@ summary.reg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "H
   }
   resvar <- rss/rdf
   R <- chol2inv(Qr$qr[p1, p1, drop = FALSE]) ## solve(X'X)
-  V <- vcov(object, type)
-  se <- sqrt(diag(V[Qr$pivot[p1],Qr$pivot[p1]]))
+  V <- vcov(object, type)[Qr$pivot[p1],Qr$pivot[p1]]
+  se <- sqrt(diag(V))
   est <- z$coefficients[Qr$pivot[p1]]
   tval <- est/se
   ans <- z[c("call", "terms")]
@@ -220,13 +220,19 @@ summary.reg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "H
     if(type=='const')
       ans$fstatistic <- c(value = (mss/(p - df.int))/resvar,
                           numdf = p - df.int, dendf = rdf)
-    else
-      ans$fstatistic <- tryCatch(c(value = (coef(object)[-1]%*%solve(V[-1,-1])%*%coef(object)[-1])/(p-1),
-                                   df = p-1), error = function(e) NULL)
-    
+    else {
+      ## Check whether there is an intercept
+      if (attr(z$terms, "intercept"))
+        F <- est[-1]%*%solve(V[-1,-1], est[-1])/(p-1)
+      else
+        F <- est%*%solve(V, est)/p
+      end 
+    }
+      ans$fstatistic <- tryCatch(c(value = F, df = p-1), 
+                                 error = function(e) NULL)    
   } else ans$r.squared <- ans$adj.r.squared <- 0
-  ##    ans$cov.unscaled <- R
-  ans$vcov <- V[Qr$pivot[p1],Qr$pivot[p1]]
+
+  ans$vcov <- V
   ans$se <- se
   dimnames(ans$vcov) <- dimnames(ans$coefficients)[c(1,1)]
   if (correlation) {
@@ -387,32 +393,7 @@ vcov.reg <- function (object,
     r <- r[j]    
     X <- X[j, nNA, drop = FALSE]*c(sqrt(w))        
     r <- r*sqrt(w)
-    
-    ## mr2 <- function() {
-    ##     res <- NULL
-    ##     for (jj in 1:nc) {
-    ##         ind   <- clus.start[jj]+ (0:(clus.size[jj]-1)) 
-    ##         Xi    <- X[ind,,drop=FALSE]
-    ##         Hgg   <- chol(diag(length(ind))-Xi%*%R%*%t(Xi), pivot = TRUE)
-    ##         pivot <- attr(Hgg, "pivot")
-    ##         oo    <- order(pivot)
-    ##         Hgg   <- Hgg[,oo]
-    ##         res   <- c(res, solve(Hgg)%*%r[ind])
-    ##     }
-    ##     res
-    ## }
-    
-    ## mr3 <- function() {
-    ##     res <- NULL
-    ##     for (jj in 1:nc) {
-    ##         ind <- clus.start[jj]+ (0:(clus.size[jj]-1)) 
-    ##         Xi  <- X[ind,,drop=FALSE]
-    ##         Hgg <- solve(diag(length(ind))-Xi%*%R%*% t(Xi))
-    ##         res <- c(res, Hgg%*%r[ind])
-    ##     }
-    ##     sqrt((nc-1)/nc)*res
-    ## }
-    
+   
     res <- switch(EXPR = type,                       
                   HC2 = .Call("resHC2", X, r, R, clus.start, clus.size, PACKAGE = "grpack"),
                   HC3 = .Call("resHC3", X, r, R, clus.start, clus.size, PACKAGE = "grpack"),

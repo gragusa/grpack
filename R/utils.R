@@ -1,14 +1,14 @@
 ##################################################################
 ## utils.R /
-## Author: Giuseppe Ragusa 
-## Time-stamp: "2012-03-25 17:05:51 gragusa" 
+## Author: Giuseppe Ragusa
+## Time-stamp: "2012-03-25 17:05:51 gragusa"
 ##
 ## Description: Utils function for grpack
 ##################################################################
 ##' @export
 rndCGM <- function( alpha = 0, beta = 1, sdalpha = 1, sdepsilon = 1,
                    nclusters = 4, nsubjects = 30, errortype = "homoskedastic",
-                   errordist = 1, 
+                   errordist = 1,
                    constantreg = FALSE, nins = 0, rho = 0.9, r2 = 0.1,
                    nuisance = 0, sdnuisance = 1)
 {
@@ -20,9 +20,9 @@ rndCGM <- function( alpha = 0, beta = 1, sdalpha = 1, sdepsilon = 1,
     else
         ag <- rep(sqrt(sdalpha)*(rchisq(S, df=1)-1)/sqrt(2), each = Ns)
     Xg <- rep(rnorm(S, mean = 0, sd = sdalpha), each = Ns)
-    
+
     ## Generate Instruments
-    
+
     if(!constantreg) {
         Xig <- rnorm(S*Ns, mean = 0, sd = sdalpha)
         scale <- 1
@@ -31,7 +31,7 @@ rndCGM <- function( alpha = 0, beta = 1, sdalpha = 1, sdepsilon = 1,
         Xig <- rep(rnorm(S, mean = 0, sd = sdalpha), each = Ns)
         scale <- sqrt(2)
     }
-    
+
     if (errortype == "homoskedastic") {
         eig <- rnorm(S*Ns,sd = sdepsilon)
         uig <- rnorm(S*Ns,sd = sdepsilon)
@@ -39,7 +39,7 @@ rndCGM <- function( alpha = 0, beta = 1, sdalpha = 1, sdepsilon = 1,
         eig <- rnorm(S*Ns,sd = sqrt(9*(Xg+Xig)^2))
         uig <- rnorm(S*Ns,sd = sdepsilon)
     }
-    
+
     if(nins > 0) {
         gamma = sqrt(r2/(nins*(1-r2)))
         errc <- cbind(eig,uig)
@@ -55,11 +55,11 @@ rndCGM <- function( alpha = 0, beta = 1, sdalpha = 1, sdepsilon = 1,
         if(errordist == 1)
           nug <- rep(rnorm(S, mean = 0, sd = sdalpha), each = Ns)
         else
-          nug <- rep(sqrt(sdalpha)*(rchisq(S, df=1)-1)/sqrt(2), each = Ns)    
-        
+          nug <- rep(sqrt(sdalpha)*(rchisq(S, df=1)-1)/sqrt(2), each = Ns)
+
         Xig <- Zig%*%rep(gamma,nins) + uig + nug
     }
-    
+
     yis <- alpha+beta*((Xg+Xig)/scale)+eig+ag
     if(nins)
         data.frame(y = yis, X = (Xig+Xg)/scale, Zig = Zig, cluster = rep(1:S,each = Ns))
@@ -67,14 +67,14 @@ rndCGM <- function( alpha = 0, beta = 1, sdalpha = 1, sdepsilon = 1,
         data.frame(y = yis, X = (Xig+Xg)/scale, cluster = rep(1:S,each = Ns))
 }
 
-rndCGM2 <- function( sdalpha = 1, k = 5, nclusters = 5, nsubjects = 50, 
+rndCGM2 <- function( sdalpha = 1, k = 5, nclusters = 5, nsubjects = 50,
                     gamma = c(1,.025,1,0) )
 {
     k <- k-2
     s  <- 1:nclusters
     S  <- nclusters
     Ns <- nsubjects
-    ag <- rep(rnorm(S, mean = 0, sd = sdalpha), each = Ns)    
+    ag <- rep(rnorm(S, mean = 0, sd = sdalpha), each = Ns)
     U <- matrix(rnorm(S*Ns*k), S*Ns, k)
     Xg <- rep(rnorm(S)*runif(S, min = 1, max =3)/2, each = Ns)
     ##     x1 <- rnorm(S*Ns, mean = 0.5, sd = 1.2)
@@ -94,33 +94,33 @@ trim <- function(x, q = 0.01) {
   x[x>qq[1] & x<qq[2]]
 }
 
-capply <- function(str, ff) 
-  sapply(lapply(strsplit(str, NULL), ff), paste, collapse="") 
+capply <- function(str, ff)
+  sapply(lapply(strsplit(str, NULL), ff), paste, collapse="")
 
 cap <- function(char) {
   ## change lower letters to upper, others leave unchanged
-  if (any(ind <- letters==char)) LETTERS[ind]    else char 
+  if (any(ind <- letters==char)) LETTERS[ind]    else char
 }
 
 capitalize <- function(str) { # vector of words
    ff <- function(x) paste(lapply(unlist(strsplit(x, NULL)),cap),collapse="")
-   capply(str,ff) 
+   capply(str,ff)
 }
 
 lower <- function(char) {
     ## change upper letters to lower, others leave unchanged
-    if (any(ind <- LETTERS==char)) letters[ind]    else char 
+    if (any(ind <- LETTERS==char)) letters[ind]    else char
 }
 
 lowerize <- function(str) {
     ff <- function(x) paste(lapply(unlist(strsplit(x, NULL)),lower),collapse="")
-    capply(str,ff) 
+    capply(str,ff)
 }
 
 "CapLeading" <- function(str) {
     ff <- function(x) {r <- x; r[1]<-cap(x[1]); r}
-    capply(str,ff) 
+    capply(str,ff)
 }
 
-model.cluster <- function (x) 
+model.cluster <- function (x)
   x$"(cluster)"

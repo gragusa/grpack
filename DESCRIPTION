@@ -18,7 +18,8 @@ Imports:
     stringr
 Depends:
     R (>= 2.15),
-    zoo
+    zoo,
+    Matrix
 Collate:
     'grpack.R'
     'output.R'
@@ -29,3 +30,4 @@ Collate:
     'outreg2.R'
     'latex2.R'
     'optim.R'
+Suggests: testthat

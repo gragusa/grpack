@@ -1,15 +1,16 @@
+
 ##' "Statify" regression output
 ##'
 ##' Given a regression object out a stata-like table of results.
-##' 
+##'
 ##' @title statify regression object
 ##' @param x a suitable object
 ##' @param vcov. the variance to be used
 ##' @param full if full output is needed
 ##' @param mask coefficient to be exluded
 ##' @param df degrees of freedom for the p-values
-##' @param ... 
-##' @return Output 
+##' @param ...
+##' @return Output
 ##' @author Giuseppe M. Ragusa
 ##' @export
 statify <- function(x,
@@ -18,15 +19,15 @@ statify <- function(x,
   if(missing(mask))
     mask <- 1L:length(coef(x))
   scipen <- options()$scipen
-  type <- match.arg(vcov.) 
+  type <- match.arg(vcov.)
   coef <- coeftest(x, df = df)
-  coef <- cbind(coef, confint(x, vcov. = type))  
+  coef <- cbind(coef, confint(x, vcov. = type))
   coef[,4] <- zapsmall(coef[,4], digits = 4)
-  coef <- coef[mask,] 
+  coef <- coef[mask,]
   vn <- rownames(coef)
   mm <- match('(Intercept)', vn)
   if(!is.na(mm)) {
-    vn[mm] <- '_cons'   
+    vn[mm] <- '_cons'
     vn   <- vn[c(2:length(vn),1)]
     coef <- coef[c(2:length(vn),1),]
   }
@@ -36,19 +37,19 @@ statify <- function(x,
   colnames(fcoef) <- colnames(coef)
   rownames(fcoef) <- rownames(coef)
   cf <- fcoef
-  
+
   y <- names(x$model)[1]
-  
-  vn <- sapply(vn, FUN=function(u) paste(substr('            ', 1, 12-nchar(u)), 
-                                         u, sep=''))  
+
+  vn <- sapply(vn, FUN=function(u) paste(substr('            ', 1, 12-nchar(u)),
+                                         u, sep=''))
   if(full) {
     sumx <- summary(x)
     fstat <- sumx$fstatistic
     info <- matrix(0,5,1)
     info[1,1] <- fstat[1L]
-    info[2,1] <- ifelse(length(fstat)==3, 
+    info[2,1] <- ifelse(length(fstat)==3,
                         pf(fstat[1L], fstat[2L], fstat[3L], lower.tail = FALSE),
-                        pchisq(fstat[1L], fstat[2L], lower.tail = FALSE))      
+                        pchisq(fstat[1L], fstat[2L], lower.tail = FALSE))
     info[2,1] <- zapsmall(info[2,1], digits=4)
     info[3,1] <- sumx$r.squared
     info[4,1] <- sumx$adj.r.squared
@@ -59,37 +60,49 @@ statify <- function(x,
     ind <- which(as.numeric(info)>10^5)
     if(length(ind))
       info[1,ind] <- paste(format.df(as.numeric(info[1,ind])/10^6, numeric=FALSE, dec=1), 'e+06', sep='')
-    
+
     rank <- formatC((x$rank-1), 'd', width = 3, digits = 0, flag = "# ")
     dfr  <- format(ceiling(x$df+x$rank), scientific=(1-scipen))
     dfr  <- paste(strtrim('      ',6-nchar(dfr)), dfr, sep='')
     obs  <- format(ceiling(x$df), scientific=(1-scipen))
     obs  <- paste(strtrim('      ',6-nchar(dfr)), dfr, sep='')
-    
-    cat('Linear regression                                     Number of obs = ', dfr,'\n')
-    cat('                                                      F(',rank,',', dfr,') = ', info[1,1],'\n', sep='')
-    cat('                                                      Prob > F      =', info[1,2],'\n')
-    cat('                                                      R-squared     =', info[1,3],'\n')
-    cat('                                                      Adj R-squared =', info[1,4],'\n')
-    cat('                                                      Root MSE      =', info[1,5],'\n')
+
+    # if (type!="const")
+      cat('Linear regression                                     Number of obs = ', dfr,'\n')
+      cat('                                                      F(',rank,',', dfr,') = ', info[1,1],'\n', sep='')
+      cat('                                                      Prob > F      =', info[1,2],'\n')
+      cat('                                                      R-squared     =', info[1,3],'\n')
+      cat('                                                      Adj R-squared =', info[1,4],'\n')
+      cat('                                                      Root MSE      =', info[1,5],'\n')
+    # else
+    #   cat('      Source |       SS       df       MS              Number of obs =', dfr,'\n')
+    #   cat('       Model |   ', ss, length(coef(x))-1, ms, 'Prob > F      =',   info[1,2],'\n')
+    #   Residual |   495615923    72  6883554.48           R-squared     =  0.2196
+    #   -------------+------------------------------           Adj R-squared =  0.2087
+    #   Total |   635065396    73  8699525.97           Root MSE      =  2623.7
+
+
+
+
+
   }
-  
+
   cat('------------------------------------------------------------------------------\n')
   if(type!="const")
     cat('                             Robust\n')
-  cat('           ',y,' |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]\n', sep = '')
+  cat('       ',y,' |      Coef.   Std. Err.      t    P>|t|     [95% Conf. Interval]\n', sep = '')
   cat('------------------------------------------------------------------------------\n')
-  for(j in 1:length(coef(x)))
+  for(j in mask)
     ##cat(vn[j],' |', cf[j,1],' ',cf[j,2],' ', cf[j,3],'  ',cf[j,4],'   ',cf[j,5],'  ',cf[j,6],'\n', sep ='')
     cat(paste(vn[j], ' |', cf[j,1], cf[j,2], cf[j,3], cf[j,4], cf[j,5], cf[j,6], sep=''),'\n')
-  
-  
+
+
   cat('------------------------------------------------------------------------------\n')
 }
 
 ##' @export
 eviews.regression <-
-    function(x, robust=TRUE, out='latex',...) 
+    function(x, robust=TRUE, out='latex',...)
 {
     require(lmtest, quietly = TRUE)
     attx <- attributes(x)
@@ -104,7 +117,7 @@ eviews.regression <-
     cat('======================================================================\n')
     cat('                    Coefficients   Std.Error   t-Statistic     Prob.\n')
     cat('======================================================================\n')
-        
+
     cout <- coef(x)
     if(robust)
         require(sandwich)
@@ -123,7 +136,7 @@ eviews.regression <-
         rownames(OUTabove)[1]='C                 '
     colnames(OUTabove) <- rep("",4)
     colnames(OUTbelow) <- ""
-    
+
     OUTbelow[1,] <- sx$r.squared
     OUTbelow[2,] <- sx$adj.r.squared
     OUTbelow[3,] <- sqrt(ssq/(n-k))
@@ -163,13 +176,13 @@ eviews.regression <-
             no[j+7],
             formatC(OUTbelow[j+7,1], digits = 6, format = 'f',
                     width = 12), '\n')
-            
+
         cat(no[7],
             formatC(OUTbelow[7,1], digits = 6, format = 'f',
                     width = 12), '\n')
             cat('======================================================================\n\n')
 
-    
+
 }
 
 ##' Output regression in latex form on a line
@@ -179,18 +192,18 @@ eviews.regression <-
 ##' @param x  object
 ##' @param ... other arguments
 ##' @rdname lmlatexline
-##' @export 
+##' @export
 lmlatexline <- function(x, ...)
     UseMethod('lmlatexline')
 
-  
+
 
 ##' @S3method lmlatexline reg
-lmlatexline.reg <- function(x, se= TRUE, vcov., ..., r2 = FALSE, 
-                            dmath = FALSE, inline = FALSE, 
+lmlatexline.reg <- function(x, se= TRUE, vcov., ..., r2 = FALSE,
+                            dmath = FALSE, inline = FALSE,
                             purge.factor.name = TRUE, purge.I = TRUE,
                             digits = max(3, getOption("digits") - 3),
-                            scipen = options('scipen')[[1]]) 
+                            scipen = options('scipen')[[1]])
   {
   coeff <- coef(x)
   if(missing(vcov.))
@@ -205,36 +218,36 @@ lmlatexline.reg <- function(x, se= TRUE, vcov., ..., r2 = FALSE,
   ##tmp <- round(tmp_original, 2)
   tmp1 <- round(tmp[,1], digits = digits)
   tmp2 <- round(tmp[,2], digits = digits)
-  
+
   digits0 <- digits
   while(any(tmp2==0)) {
     test <- tmp2==0
     digits0 <- digits0+1
-    tmp2[which(test)] <- round(tmp[which(test),2], digits = digits0)      
+    tmp2[which(test)] <- round(tmp[which(test),2], digits = digits0)
   }
-  
+
   digits0 <- digits
   while(any(tmp1==0)) {
     test <- tmp1==0
     digits0 <- digits0+1
-    tmp1[which(test)] <- round(tmp[which(test),1], digits = digits0)      
+    tmp1[which(test)] <- round(tmp[which(test),1], digits = digits0)
   }
-  
+
   trio <- format(cbind(tmp1,tmp2), digits=max(1, digits-1), drop0trailing=TRUE, scientific = 10000)
   if(nrow(trio)==1) rownames(trio) <- cf
-  
+
   if(r2)
     r2 <- summary(x)$r.squared
   else
     r2 <- FALSE
-  
+
   if(purge.factor.name) {
     topurge <- names(which(attributes(x$terms)$dataClasses=="factor"))
     for(j in topurge) {
-      rownames(trio) <- str_replace_all(rownames(trio), j, "")   
+      rownames(trio) <- str_replace_all(rownames(trio), j, "")
     }
   }
-  
+
   if(purge.I) {
     tmp <- str_locate(rownames(trio), "I\\(")
     whereI <- which(!is.na(tmp[,1]))
@@ -242,9 +255,9 @@ lmlatexline.reg <- function(x, se= TRUE, vcov., ..., r2 = FALSE,
       rownames(trio)[j] <- str_sub(rownames(trio)[j], start = 3, end = str_length(rownames(trio)[j])-1)
     }
   }
-  
-  
-  
+
+
+
   lmlatexline.print(trio, sc, yv, cf, dmath, r2, se, inline)
 }
 
@@ -253,8 +266,8 @@ lmlatexline.lm <- lmlatexline.reg
 
 
 ##' @S3method lmlatexline ivreg
-lmlatexline.ivreg <- function(x, se = TRUE., vcov., ..., 
-                              dmath = FALSE, inline = FALSE, 
+lmlatexline.ivreg <- function(x, se = TRUE., vcov., ...,
+                              dmath = FALSE, inline = FALSE,
                               digits = max(3, getOption("digits") - 3),
                               scipen = options('scipen')[[1]]) {
   object <- x
@@ -275,11 +288,11 @@ lmlatexline.ivreg <- function(x, se = TRUE., vcov., ...,
 lmlatexline.print <- function(trio, sc, yv, cf, dmath, r2, se, inline) {
   pstd <- function(z)
     paste('\\underset{(',z[2],')}{',z[1],'} \\,',rownames(z), sep = '')
-  
+
   pstd_nose <- function(z) {
     paste(z[1], '\\,', rownames(z), sep = '')
   }
-  
+
   if(cf[[1]] == '(Intercept)')
     if(se) {
       rs <- paste(yv, "=", "\\underset{(", trio[1,2], ")}{", trio[1,1], "}", sep = '')
@@ -300,7 +313,7 @@ lmlatexline.print <- function(trio, sc, yv, cf, dmath, r2, se, inline) {
     } else {
       rs <- paste(rs, sc[j], pstd_nose(trio[j,,drop=FALSE]), sep="")
     }
-  } 
+  }
 }
 
   if(r2) {
@@ -393,7 +406,7 @@ printMatCoef <-
                                   digits=digits)
         }
     }
-    
+
     if(length(tst.ind))
 	Cf[, tst.ind]<- format(round(xm[, tst.ind], digits = dig.tst),
                                digits = digits)
@@ -456,7 +469,7 @@ regformat  <- function(x, len, strip.zero, width,...) {
   ##     len <- c(8,7,4,4,7,7)
   ##     strip.zero <- c(TRUE, TRUE, FALSE, FALSE, TRUE, TRUE)
   nr  <- nrow(x)
-  nc  <- ncol(x)  
+  nc  <- ncol(x)
   xout <- matrix('', ncol=nc, nrow=nr)
   for(h in 1:nc) {
     for(j in 1:nr){
@@ -471,16 +484,16 @@ regformat  <- function(x, len, strip.zero, width,...) {
       } else {
         tmp <- format.df(as.numeric(x[j,h]), dec = decimal, numeric.dollar=FALSE)
       }
-      
+
       if(strip.zero[h]) {
         tmp0 <- strsplit(tmp, "\\.")[[1]]
         if(tmp0[1]=="0")
           tmp <- paste('.', tmp0[2], sep= '')
         if(tmp0[1]=="-0")
-          tmp <- paste('-.', tmp0[2], sep= '')  
+          tmp <- paste('-.', tmp0[2], sep= '')
       }
       xout[j,h]  <- paste(substr('          ', 1, width[h]-nchar(tmp)), tmp, sep='')
-    }  
+    }
   }
   ##matrix(format.df(as.numeric(xout), numeric=F), ncol=nc, nrow=nr)
   xout

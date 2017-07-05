@@ -102,26 +102,25 @@ statify <- function(x,
 
 ##' @export
 eviews.regression <-
-    function(x, robust=TRUE, out='latex',...)
+    function(x, type=c("HC1", "const", "HC", "HC0", "HC2",
+    "HC3", "HC4", "HC4m", "HC5", "HAC"), out='latex',...)
 {
     require(lmtest, quietly = TRUE)
     attx <- attributes(x)
     ff <- attx$factors
     yv <- rownames(ff)[ff==0]
-    cat("\nDependent Variable: ", yv, "\nMethod: Least Squares\n")
-    cat("Date:", format(Sys.time(), "%m-%d-%Y"),
-        '  Time:', format(Sys.time(), "%H:%M:%S"),'\n')
-    cat("Included Observations: ", length(x$fitted.values), ' after adjustments\n')
-    if(!is.null(attx$iid) && !attx$iid)
-        cat('White Heteroskedasticity-Consistent Standard Errors & Covariance\n')
-    cat('======================================================================\n')
-    cat('                    Coefficients   Std.Error   t-Statistic     Prob.\n')
-    cat('======================================================================\n')
+    rs <- ""
+    rs <- paste0("\nDependent Variable: ", yv, "\nMethod: Least Squares\n")
+    rs <- paste0(rs, "Date:", format(Sys.time(), "%m-%d-%Y"), '  Time:', format(Sys.time(), "%H:%M:%S"),'\n')
+    rs <- paste0(rs, "Included Observations: ", length(x$fitted.values), ' after adjustments\n')
+    if(type!="const")
+        rs <- paste0(rs, 'White Heteroskedasticity-Consistent Standard Errors & Covariance\n')
+    rs <- paste0(rs, '====================================================================\n')
+    rs <- paste0(rs, '                  Coefficients   Std.Error   t-Statistic     Prob.\n')
+    rs <- paste0(rs, '====================================================================\n')
 
     cout <- coef(x)
-    if(robust)
-        require(sandwich)
-    sx <- summary(x, robust=robust )
+    sx <- summary.reg(x, type=type)
     resid <- x$resid
     ssq <- sum(resid^2)
     n <- length(resid)
@@ -143,8 +142,12 @@ eviews.regression <-
     OUTbelow[4,] <- ssq
     OUTbelow[5,] <- logLik(x)
     OUTbelow[6,] <- sx$fstatistic[1]
-    OUTbelow[7,] <- pf(sx$fstatistic[[1]], df1=sx$fstatistic[[2]],
-                       df2=sx$fstatistic[[3]], lower=FALSE)
+    if (type!="const")
+      OUTbelow[7,] <- pchisq(sx$fstatistic[[1]], df=sx$fstatistic[[2]])
+    else
+      OUTbelow[7,] <- pf(sx$fstatistic[[1]], df1=sx$fstatistic[[2]],
+                         df2=n-k, lower=FALSE)
+
     OUTbelow[8,] <- mean(x$effects)
     OUTbelow[9,] <- sd(x$effects)
     OUTbelow[10,] <- AIC(x)
@@ -152,8 +155,14 @@ eviews.regression <-
     OUTbelow[12,] <- AIC(x, k=((k/2)*log(n) + (1/2)*log(det(crossprod(mX))))/k)
     OUTbelow[13,] <- dwtest(x)$stat
     OUTbelow[14,] <-  NaN
-    print(formatC(OUTabove,digits=6, format = 'f', width = 12), quote = FALSE, digits = 6)
-    cat('======================================================================\n')
+    aa <- formatC(OUTabove,digits=6, format = 'f', width = 12)
+    rr <- format(rownames(aa), width=16)
+    for (j in 1:nrow(aa)) {
+      rs <- paste0(rs, paste0(rr[j], paste0(paste0(paste0(aa[j,1], aa[j,2]), aa[j,3]), aa[j,4]), "\n"))
+    }
+
+
+    rs <- paste0(rs, '====================================================================\n')
     no <- c('R-squared         ',
             'Adjusted R-squared',
             'S.E. of regression',
@@ -170,18 +179,20 @@ eviews.regression <-
             '                         ')
 
     for (j in 1:6)
-        cat(no[j],
+        rs <- paste0(rs, no[j],
             formatC(OUTbelow[j,1], digits = 6, format = 'f',
                     width = 12),
             no[j+7],
             formatC(OUTbelow[j+7,1], digits = 6, format = 'f',
                     width = 12), '\n')
 
-        cat(no[7],
+        rs <- paste0(rs, no[7],
             formatC(OUTbelow[7,1], digits = 6, format = 'f',
                     width = 12), '\n')
-            cat('======================================================================\n\n')
+            rs <- paste0(rs, '====================================================================\n\n')
 
+
+            rs
 
 }
 
@@ -199,7 +210,7 @@ lmlatexline <- function(x, ...)
 
 
 ##' @S3method lmlatexline reg
-lmlatexline.reg <- function(x, se= TRUE, vcov., ..., r2 = FALSE,
+lmlatexline.reg <- function(x, se = TRUE, vcov., ..., r2 = FALSE,
                             dmath = FALSE, inline = FALSE,
                             purge.factor.name = TRUE, purge.I = TRUE,
                             digits = max(3, getOption("digits") - 3),
@@ -324,18 +335,19 @@ lmlatexline.print <- function(trio, sc, yv, cf, dmath, r2, se, inline) {
   }
 
   if(inline)
-    cat("\n$",rs,"$\n")
+    rs <- paste0("\n$",rs,"$\n")
   else {
     if(dmath)
-      cat("\n\\begin{dmath*}")
+      rs <- paste0("\n\\begin{dmath*}\n", rs, "\n")
     else
-      cat("\n\\begin{equation*}")
-    cat("\n",rs,"\n")
+      rs <- paste0("\n\\begin{equation*}\n", rs, "\n")
+    #cat("\n",rs,"\n")
     if(dmath)
-      cat("\\end{dmath*}\n\n")
+      rs <- paste0(rs, "\\end{dmath*}\n\n")
     else
-      cat("\\end{equation*}\n\n")
+      rs <- paste0(rs, "\\end{equation*}\n\n")
   }
+  rs
 }
 
 format.perc <- function(probs, digits)
@@ -498,7 +510,3 @@ regformat  <- function(x, len, strip.zero, width,...) {
   ##matrix(format.df(as.numeric(xout), numeric=F), ncol=nc, nrow=nr)
   xout
 }
-
-
-
-

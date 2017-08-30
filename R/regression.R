@@ -199,7 +199,11 @@ summary.reg <- function (object, type = c("HC1", "const", "HC", "HC0", "HC2", "H
   }
   resvar <- rss/rdf
   R <- chol2inv(Qr$qr[p1, p1, drop = FALSE]) ## solve(X'X)
-  V <- vcovHC(object, type)[Qr$pivot[p1],Qr$pivot[p1]]
+  if(is.null(z$clusterby)) {
+    V <- vcovHC(object, type)[Qr$pivot[p1],Qr$pivot[p1]]
+  } else {
+    V <- vcov(object, type)[Qr$pivot[p1],Qr$pivot[p1]]
+  }
   se <- sqrt(diag(V))
   est <- z$coefficients[Qr$pivot[p1]]
   tval <- est/se

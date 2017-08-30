@@ -103,12 +103,14 @@ statify <- function(x,
 ##' @export
 eviews.regression <-
     function(x, type=c("HC1", "const", "HC", "HC0", "HC2",
-    "HC3", "HC4", "HC4m", "HC5", "HAC"), out='latex',...)
+    "HC3", "HC4", "HC4m", "HC5", "HAC"), omit.stat = FALSE, ...)
 {
     require(lmtest, quietly = TRUE)
+    type <- match.arg(type)
     attx <- attributes(x)
     ff <- attx$factors
-    yv <- rownames(ff)[ff==0]
+    yv <- as.character(x$terms[[2]])
+    yv <- ifelse(length(yv)>1, yv[2], yv[1])
     rs <- ""
     rs <- paste0("\nDependent Variable: ", yv, "\nMethod: Least Squares\n")
     rs <- paste0(rs, "Date:", format(Sys.time(), "%m-%d-%Y"), '  Time:', format(Sys.time(), "%H:%M:%S"),'\n')
@@ -163,6 +165,7 @@ eviews.regression <-
 
 
     rs <- paste0(rs, '====================================================================\n')
+    if(!omit.stat) {
     no <- c('R-squared         ',
             'Adjusted R-squared',
             'S.E. of regression',
@@ -191,7 +194,7 @@ eviews.regression <-
                     width = 12), '\n')
             rs <- paste0(rs, '====================================================================\n\n')
 
-
+}
             rs
 
 }
@@ -267,8 +270,6 @@ lmlatexline.reg <- function(x, se = TRUE, vcov., ..., r2 = FALSE,
     }
   }
 
-
-
   lmlatexline.print(trio, sc, yv, cf, dmath, r2, se, inline)
 }
 
@@ -277,19 +278,26 @@ lmlatexline.lm <- lmlatexline.reg
 
 
 ##' @S3method lmlatexline ivreg
-lmlatexline.ivreg <- function(x, se = TRUE., vcov., ...,
+lmlatexline.ivreg <- function(x, se = TRUE, vcov., ...,
                               dmath = FALSE, inline = FALSE,
                               digits = max(3, getOption("digits") - 3),
                               scipen = options('scipen')[[1]]) {
   object <- x
   coeff <- coef(object)
   if(missing(vcov.))
-    vcov. <- vcov.ivreg
-  serr <- vcov.(object, ...)
+    vcov. <- vcov
+  if (is.function(vcov.))
+    serr <- sqrt(diag(vcov.(object, ...)))
+  else if (is.matrix(vcov.) && nrow(vcov.) == ncol(vcov.) && nrow(vcov.) == length(coeff))
+    serr <- sqrt(diag(vcov.))
+  else
+    error("Something wrong with the definition of the variance")
+
   sc <- ifelse(coeff>0,"+","-")
   cf <- names(coeff)
-  ff <- attributes(object$terms)$factors
+  ff <- attributes(object$terms$full)$factor
   yv <- rownames(ff)[rowSums(ff) == 0]
+
   trio <- format(round(cbind(abs(coeff), serr), digits), digits = digits, trim = TRUE,
                  scientific = scipen)
   r2 <- FALSE

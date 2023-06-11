@@ -348,12 +348,12 @@ lmlatexline.print <- function(trio, sc, yv, cf, dmath, r2, se, inline) {
     if(dmath)
       rs <- paste0("\n\\begin{dmath*}\n", rs, "\n")
     else
-      rs <- paste0("\n\\begin{equation*}\n", rs, "\n")
+      rs <- paste0("\n\\[\n", rs, "\n")
     #cat("\n",rs,"\n")
     if(dmath)
       rs <- paste0(rs, "\\end{dmath*}\n\n")
     else
-      rs <- paste0(rs, "\\end{equation*}\n\n")
+      rs <- paste0(rs, "\\]\n\n")
   }
   rs
 }
